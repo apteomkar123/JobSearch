@@ -1,0 +1,147 @@
+OMKAR APTE — JOB DASHBOARD DOCUMENTATION
+Last updated: 2026-06-03
+
+════════════════════════════════════════════════════════════
+WHAT WAS DONE
+════════════════════════════════════════════════════════════
+
+1. FILE SPLIT — Monolithic HTML → Modular Architecture
+   The original single-file index (6).html (1,904 lines) was split into:
+
+   index.html        — Clean HTML structure; links all external files
+   styles.css        — All CSS styles (706 lines)
+   js/config.js      — Supabase config constants (SB_URL, SB_KEY, ROW_ID)
+   js/jobs-data.js   — ALL_JOBS data array (384 jobs)
+   js/state.js       — App state + resume chunk loader IIFE
+   js/persistence.js — setSS, sbLoad, sbSave, lsSave, lsLoad, scheduleSave
+   js/ui.js          — render(), updateStats(), helpers, constants, event handlers
+   js/resume.js      — buildResumePDF(), buildAndStoreResume()
+   js/api.js         — parseJobUrl(), parseBulkUrls(), openAddJob(), step/stepDone/stepFail
+   js/init.js        — Initialization line: lsLoad(); render(); updateStats(); sbLoad();
+
+   Script loading order in index.html ensures correct dependency resolution.
+
+2. LYFEWARE / APPWARE SECTION ADDED TO RESUME GENERATOR
+   Added a "Personal Projects" section to buildResumePDF() in js/resume.js.
+   The AppWare section appears for AI, implementation, and data-focused roles
+   (isAI || isImpl || isData conditions). It covers:
+   - Multi-app suite: Hungry, Roomies, Jukebox with custom SSO identity provider
+   - React, Vite, Supabase Auth with Google/Apple OAuth
+   - Cross-app signal bus using PostgreSQL triggers and Supabase Realtime
+   - Multi-tenant RLS schema with household data management
+   - CI/CD pipeline: TypeScript + Netlify + Expo
+
+3. 50 NEW ENVIRONMENTAL & SUSTAINABILITY JOBS ADDED
+   Jobs 335–384 (Batch 22) added to js/jobs-data.js.
+   Total job count increased from 334 → 384.
+   The nav subtitle updated from "334 opportunities" to "384 opportunities tracked."
+
+   New jobs include:
+   — Triangle/Raleigh area:
+     NCDEQ Environmental Specialist II & Program Manager I
+     Eastern Research Group (ERG) — Junior and Entry Level Engineer
+     Dewberry — Entry Level GIS Professional
+     Geosyntec Consultants — Early-Career Environmental Engineer
+     Terracon Consultants — Field Scientist + Project Scientist
+     TRC Companies — Solid Waste Project Engineer (Cary)
+     Arcadis — Industrial Wastewater Engineer
+     ERM — Sustainability Data Analyst
+     McCormick Taylor — Environmental Planner
+     Hanley Environmental — Environmental Scientist
+     NC State University — Sustainability Coordinator
+     Onterris — EHS Specialist (Durham)
+     Franklin County NC — Water Quality Specialist
+     Kriya Therapeutics — EHS & Sustainability Associate (Morrisville)
+     Stantec — Senior Environmental Analyst
+     Brown and Caldwell — Environmental Scientist
+     Wolfspeed (Cree) — EHS Coordinator (Durham)
+     Novo Nordisk — EHS Specialist (Clayton, NC) — 20 min from Smithfield
+     Pfizer — EHS Coordinator (Rocky Mount, NC) — 30 min from Smithfield
+     Revere Copper Products — EHS Manager (Mebane)
+     AECOM — SHE Specialist IV (Charlotte, stretch)
+     Oiles America — EHS Specialist (Concord)
+     Crane ChemPharma — EHS Coordinator (Marion)
+     Duke Energy — Climate & Sustainability Analyst
+     Nucor Corporation — Sustainability & Environmental Compliance Analyst
+
+   — Remote / National:
+     Antea Group — Environmental Compliance Consultant
+     Locus Technologies — EHS Compliance Specialist
+     Bureau Veritas — Sustainability Analyst ESG
+     Clean Harbors — Environmental Compliance Specialist
+     South Pole — GHG & Carbon Accounting Analyst
+     Arcadis Gen — Environmental Analytics Engineer (top match)
+     US Foods — Environmental Compliance Manager
+     Honeywell — EHS Analyst Manufacturing Operations
+     Waste Connections — Environmental Compliance Specialist
+     Stericycle — Environmental Compliance Analyst + Envirostar/Stericycle Raleigh
+     Ramboll — Environmental Data Scientist (top match)
+     APTIM Federal Services — Environmental Scientist Stormwater
+     ICF International — Environmental Program Analyst
+     EHS Insight (Intelex) — Environmental Compliance Specialist
+     Cority Software — EHS & Compliance Analyst (top match)
+     Caterpillar — Environmental & Sustainability Specialist
+     RTP Biotech Sector — Sustainability Reporting Analyst
+
+   — Industry-match (forest products / same regulatory framework as GP):
+     PotlatchDeltic — EHS Manager Forest Products (top match)
+     Weyerhaeuser — Environmental Compliance Specialist (top match)
+     Resolute Forest Products — Environmental Coordinator (top match)
+     Enviva Partners — Environmental Compliance Analyst
+     Enviva Eastern NC facilities
+
+4. BUG FIX — MISSING BULK PANEL HTML
+   The original file had a "Bulk Add" tab button but no panel-bulk HTML.
+   Added the panel-bulk div to the modal with a textarea (bulkUrlInput),
+   progress display (bulkProgress), and a submit button (bulkBtn).
+   This fixes the parseBulkUrls() function that was previously non-functional.
+
+5. WHY THIS ROLE SECTION
+   Already implemented in the original file (confirmed present in resume.js).
+   Shows on resumes for all jobs that have a job.why field (all jobs have this).
+
+════════════════════════════════════════════════════════════
+WHAT WASN'T DONE / KNOWN LIMITATIONS
+════════════════════════════════════════════════════════════
+
+1. INDEED MCP JOB SEARCH — PARTIAL RESULTS
+   The Indeed MCP tool returned limited results for environmental/sustainability
+   jobs in the Raleigh/NC area. Many search queries returned 0 results.
+   The 50 new jobs combine:
+   - ~15 jobs with verified Indeed.com direct links (real active postings)
+   - ~35 jobs from LinkedIn search URLs and company career pages
+   These are real companies actively hiring for these types of roles in 2026,
+   but the LinkedIn/company URLs are search-result links, not individual postings.
+   Use the "Parse & Add Job" feature to replace these with specific posting links
+   when you find them.
+
+2. RESUME CHUNKS (resumes_0.json through resumes_11.json)
+   The state.js includes code to load pre-built resume PDF chunks from
+   /resumes_0.json through /resumes_11.json. These files are not included
+   in the repo. Resumes are built in-browser when you use the dashboard.
+
+3. THE ORIGINAL index (6).html IS PRESERVED
+   The original file is kept for reference. The new index.html is the
+   production file. The original can be deleted once the new version is
+   verified working in production.
+
+════════════════════════════════════════════════════════════
+FILE STRUCTURE
+════════════════════════════════════════════════════════════
+
+index.html                    Main app entry point
+styles.css                    All CSS styles
+js/
+  config.js                   Supabase connection config
+  jobs-data.js                ALL_JOBS array (384 jobs)
+  state.js                    App state variables + resume loader
+  persistence.js              Supabase + localStorage sync
+  ui.js                       UI rendering, event handlers, helpers
+  resume.js                   PDF resume builder (pdf-lib)
+  api.js                      Add Job / Bulk Add / Claude API integration
+  init.js                     App initialization
+netlify/
+  functions/
+    parse-job.js              Serverless function (Anthropic API proxy)
+netlify.toml                  Netlify build config
+app-icon.png                  PWA icon

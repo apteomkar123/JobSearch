@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Omkar Apte — Job Dashboard</title>
+<link rel="apple-touch-icon" sizes="512x512" href="app-icon.png">
+<link rel="apple-touch-icon" href="app-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OA Jobs">
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="shell">
+<nav class="nav">
+  <div>
+    <div class="nav-brand">Omkar Apte</div>
+    <div class="nav-sub">Tech × Environment · 384 opportunities tracked</div>
+  </div>
+  <div class="nav-right">
+    <button onclick="openAddJob()" class="btn" style="background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-size:11px;padding:6px 12px;cursor:pointer;border-radius:7px;display:flex;align-items:center;gap:5px">
+      <span style="font-size:15px;line-height:1">+</span> Add Job
+    </button>
+    <div class="sync-pill">
+      <span class="sync-dot pend" id="sync-dot"></span>
+      <span id="sync-txt">Connecting</span>
+    </div>
+  </div>
+</nav>
+
+<!-- STATS -->
+<div class="stats-grid" id="stats-grid">
+  <div class="stat-card" style="--accent-color:var(--blue)">
+    <div class="stat-val" style="color:var(--text)" id="s-total">—</div>
+    <div class="stat-lbl">Total Jobs</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val" style="color:var(--blue)" id="s-applied">—</div>
+    <div class="stat-lbl">Applied</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val" style="color:var(--purple)" id="s-interviews">—</div>
+    <div class="stat-lbl">Interviews</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val" style="color:var(--amber)" id="s-flagged">—</div>
+    <div class="stat-lbl">Flagged</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val" style="color:var(--red)" id="s-unapplied">—</div>
+    <div class="stat-lbl">Not Applied</div>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filter-zone">
+  <div class="filter-row" id="round-filter">
+    <span class="filter-lbl">Round</span>
+    <button class="fbtn active" onclick="setFilter('batch','all',this)">All</button>
+  </div>
+  <div class="divider"></div>
+  <div class="filter-row">
+    <span class="filter-lbl">Status</span>
+    <button class="fbtn active" onclick="setFilter('status','all',this)">All</button>
+    <button class="fbtn" onclick="setFilter('status','Not Applied',this)">Not Applied</button>
+    <button class="fbtn" onclick="setFilter('status','Applied',this)">Applied</button>
+    <button class="fbtn" onclick="setFilter('status','Interview',this)">Interview</button>
+    <button class="fbtn" onclick="setFilter('status','Offer',this)">Offer</button>
+    <button class="fbtn" onclick="setFilter('status','Rejected',this)">Rejected</button>
+  </div>
+  <div class="divider"></div>
+  <div class="filter-row">
+    <span class="filter-lbl">Flag</span>
+    <button class="fbtn active" onclick="setFilter('flag','all',this)">All</button>
+    <button class="fbtn" onclick="setFilter('flag','flagged',this)">⭐ Flagged</button>
+  </div>
+  <div class="divider"></div>
+  <div class="filter-row">
+    <span class="filter-lbl">CL</span>
+    <button class="fbtn active" onclick="setFilter('cl','all',this)">All</button>
+    <button class="fbtn" onclick="setFilter('cl','needed',this)">Needs CL</button>
+    <button class="fbtn" onclick="setFilter('cl','done',this)">Done</button>
+  </div>
+  <div class="divider"></div>
+  <div class="filter-row">
+    <span class="filter-lbl">Sort</span>
+    <button class="fbtn active" onclick="setSort('fit',this)">Fit %</button>
+    <button class="fbtn" onclick="setSort('id',this)">Newest</button>
+  </div>
+  <div class="divider"></div>
+  <div class="filter-row">
+    <span class="filter-lbl">View</span>
+    <button class="fbtn" id="btn-recent" onclick="toggleRecent(this)">🕐 Recent 10</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tab-bar" id="tab-bar"></div>
+
+<!-- CARDS -->
+<div class="cards-list" id="cards"></div>
+
+<!-- FOOTER -->
+<div class="footer-card">
+  <div class="footer-label">Priority Queue</div>
+  <div class="footer-text">
+    Top fits: <strong>Blue Signal</strong> (92%) · <strong>VelocityEHS</strong> (94%) · <strong>Sphera Implementation</strong> (92%) · <strong>APTIM EMIS/GIS</strong> (91%)<br>
+    Local: Zebulon Planner · Novo Nordisk Clayton · Davey Tree Raleigh · Hart &amp; Hickman Raleigh · Skanska Durham
+  </div>
+</div>
+
+<!-- ADD JOB MODAL -->
+<div class="modal-backdrop" id="addJobModal">
+  <div class="modal">
+    <div style="display:flex;gap:6px;margin-bottom:14px">
+      <button id="tab-single" onclick="switchAddTab('single')" class="btn-primary" style="flex:1;font-size:11px;padding:7px">Single Job</button>
+      <button id="tab-bulk" onclick="switchAddTab('bulk')" class="btn-secondary" style="flex:1;font-size:11px;padding:7px">Bulk Add</button>
+    </div>
+
+    <div id="panel-single">
+      <div class="modal-title">Add New Job</div>
+      <div class="modal-sub">Paste any job posting URL — Indeed, LinkedIn, company site, anywhere.<br>Claude will parse it, build a tailored resume, and add it to the dashboard.</div>
+      <div class="apikey-banner" id="apikey-banner">
+        🔑 First time setup: enter your Anthropic API key below (get one free at <b>console.anthropic.com</b>)<br>
+        It's saved locally in your browser and never sent anywhere except Anthropic.
+      </div>
+      <input class="modal-input" id="apikeyInput" type="password" placeholder="sk-ant-... (Anthropic API key)" style="display:none" />
+      <input class="modal-input" id="jobUrlInput" type="url" placeholder="https://jobs.company.com/posting/12345" />
+      <div class="modal-progress" id="jobProgress"></div>
+      <div class="modal-row">
+        <button class="btn-primary" id="parseBtn" onclick="parseJobUrl()">Parse & Add Job</button>
+        <button class="btn-secondary" onclick="closeAddJob()">Cancel</button>
+        <button class="btn-secondary" onclick="localStorage.removeItem('oa_anthropic_key');toast('API key cleared');openAddJob();" title="Reset API key" style="padding:9px 10px">🔑</button>
+      </div>
+    </div><!-- /panel-single -->
+
+    <div id="panel-bulk" style="display:none">
+      <div class="modal-title">Bulk Add Jobs</div>
+      <div class="modal-sub">Paste one job URL per line. Claude will parse each one and add them to your dashboard.</div>
+      <textarea class="modal-input" id="bulkUrlInput" rows="6" style="resize:vertical;min-height:100px" placeholder="https://jobs.company.com/posting/1&#10;https://jobs.company.com/posting/2&#10;https://jobs.company.com/posting/3"></textarea>
+      <div class="modal-progress" id="bulkProgress"></div>
+      <div class="modal-row">
+        <button class="btn-primary" id="bulkBtn" onclick="parseBulkUrls()">Parse & Add All</button>
+        <button class="btn-secondary" onclick="closeAddJob()">Cancel</button>
+      </div>
+    </div><!-- /panel-bulk -->
+
+  </div>
+</div>
+
+</div><!-- /shell -->
+
+<div id="toast"></div>
+<script type="application/json" id="resumes-data">{}</script>
+
+<!-- Load scripts in dependency order -->
+<script src="js/config.js"></script>
+<script src="js/jobs-data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/persistence.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/resume.js"></script>
+<script src="js/api.js"></script>
+<script src="js/init.js"></script>
+</body>
+</html>
