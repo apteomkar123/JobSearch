@@ -108,7 +108,7 @@ window.parseJobUrl = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 4000,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         system: `You are a job data extraction assistant. Your ONLY job is to extract structured data from a job posting URL and return it as a JSON object. 
@@ -142,7 +142,7 @@ Fetch the URL content first using web search if needed, then extract the data.`,
       let errMsg = 'HTTP ' + fetchResp.status;
       try {
         const errData = await fetchResp.json();
-        if(errData.error) errMsg = errData.error;
+        if(errData.error) errMsg = typeof errData.error === 'string' ? errData.error : (errData.error.message || JSON.stringify(errData.error));
       } catch(e) {}
       if(fetchResp.status === 401) { errMsg = 'Invalid API key — check your Anthropic API key'; localStorage.removeItem('oa_anthropic_key'); }
       if(fetchResp.status === 429) errMsg = 'Rate limited — wait a moment and try again';
@@ -210,7 +210,7 @@ Fetch the URL content first using web search if needed, then extract the data.`,
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 2000,
         system: `You write resume summaries and identify which experience bullets to highlight for job applications.
 
