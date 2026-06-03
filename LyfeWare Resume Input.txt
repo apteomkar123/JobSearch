@@ -1,0 +1,11 @@
+LyfeWare Resume Input:
+
+Integrated Lifestyle Ecosystem: Architected and deployed a multi-app suite consisting of Hungry (AI culinary intelligence), Roomies (domestic operations), and Jukebox (social music atmosphere), unified by a custom "Sign in with AppWare" SSO identity provider.
+Unified Identity & SSO: Engineered a centralized authentication portal using React, Vite, and Supabase Auth with Google and Apple OAuth integration, enabling seamless cross-platform session persistence and data portability across three distinct web and mobile applications.
+Cross-App Signal Bus: Developed a real-time event-driven architecture using PostgreSQL triggers and Supabase Realtime to synchronize state between apps—e.g., automatically triggering high-BPM "Cleaning Playlists" in Jukebox when a "Deep Clean" chore is started in Roomies.
+Robust Database Architecture: Designed a unified, scalable Supabase schema featuring complex Row Level Security (RLS) policies to handle multi-tenant "Household" logic, ensuring data privacy while allowing shared access to grocery lists, expenses, and household analytics.
+Product Suite Overview:
+Hungry: Built an AI-driven pantry and recipe manager featuring receipt-scanning expense splitting and smart meal planning based on dietary restrictions.
+Roomies: Developed a co-living management system with gamified chore drafting, automated debt settlement, and property maintenance tracking.
+Jukebox: Created a social music platform (React Native/Expo) that utilizes a "Mood-Food" matching engine to curate atmospheres based on household activity.
+DevOps & Build Process: Orchestrated a modern CI/CD pipeline leveraging TypeScript for end-to-end type safety, Netlify for high-availability web hosting, and Expo for cross-platform mobile deployment.
