@@ -4,11 +4,11 @@
 
 async function runBulkResumeGeneration() {
   const CHUNK_SIZE = 35; // Splitting 384 jobs into ~11 manageable chunks
-  const total = ALL_JOBS.length;
+  const total = window.ALL_JOBS.length;
   console.log(`🚀 Starting bulk generation for ${total} jobs...`);
 
   for (let i = 0; i < total; i += CHUNK_SIZE) {
-    const chunk = ALL_JOBS.slice(i, i + CHUNK_SIZE);
+    const chunk = window.ALL_JOBS.slice(i, i + CHUNK_SIZE);
     const chunkIndex = Math.floor(i / CHUNK_SIZE);
     const chunkData = {};
 
@@ -22,7 +22,7 @@ async function runBulkResumeGeneration() {
       const result = await buildAndStoreResume(job, summary);
       if (result) {
         // The buildAndStoreResume function puts data into the global RESUMES object
-        chunkData[String(job.id)] = RESUMES[String(job.id)];
+        chunkData[String(job.id)] = window.RESUMES[String(job.id)];
       }
     }
 

@@ -278,7 +278,7 @@ async function buildAndStoreResume(job, summaryText) {
     }
     const b64 = btoa(binary);
     const fname = 'Omkar Apte (' + job.company.split('(')[0].trim() + ' - ' + job.title + ') Resume.pdf';
-    RESUMES[String(job.id)] = { name: fname, b64 };
+    window.RESUMES[String(job.id)] = { name: fname, b64 };
     return { name: fname, b64 };
   } catch(e) {
     console.error('Resume build failed:', e);
