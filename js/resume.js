@@ -177,10 +177,11 @@ async function buildResumePDF(job, summaryText) {
     skillLine('Technical', ['Python','Power BI','GIS / ArcGIS','Power Automate','GitHub Copilot','Excel','R','SQL']);
   }
 
-  // Mandatory universal skill blocks
-  skillLine('Academic', ['Proficient in Math and Science', 'Great writer and communicator', 'High business and economic sense', 'Creative problem solving', 'Soil Science', 'Sustainability and Climate Change', 'Natural Resource Management', 'Organic Chemistry', 'Energy and the Environment', 'Circuits', 'Computer Logic', 'C Programming']);
+  // ── MANDATORY UNIVERSAL SKILL BLOCKS ─────────────────────────────────────
+  skillLine('Academic', ['Proficient in Math and Science', 'Great writer and communicator', 'High business and economic sense', 'Creative when it comes to solving problems', 'Soil Science', 'Sustainability and Climate Change', 'Natural Resource Management', 'Organic Chemistry', 'Energy and the Environment', 'Electrical Engineering: Circuits, Computer Logic, C Programming']);
   skillLine('Technical', ['HTML', 'CSS', 'JavaScript', 'Microsoft Office', 'Photoshop', 'Python', 'R', 'C#', 'C', 'GIS', 'Microsoft Power Tools', 'AI Agents', 'Github Copilot']);
-  skillLine('Personal', ['Problem solving', 'Strong work ethic', 'Creative', 'Positive', 'Team-oriented', 'Quick learner', 'Sociable', 'Strong communication', 'Innovative', 'Organized', 'Analytical']);
+  skillLine('Personal', ['Problem solving', 'Strong work ethic', 'Creative', 'Positive', 'Work well in a team', 'Quick learner', 'Sociable', 'Strong communication skills', 'Innovative', 'Organized', 'Analytical', 'Driven', 'Highly Competent']);
+  // ────────────────────────────────────────────────────────────────────────
 
   skillLine('Communication', ['Technical Report Writing','Regulatory Coordination','200+ Employee Training','Management Briefings','Cross-functional Coordination']);
   y -= 3;
@@ -207,7 +208,7 @@ async function buildResumePDF(job, summaryText) {
     'Manages Title V air permit compliance including PCWP-MACT and BMACT standards; coordinates annual certifications, permit deviations, and all NCDEQ agency correspondence',
     'Directs monthly water quality sampling under NCMA certification and conducts regular compliance audits to manage facility-wide corrective actions through to closure',
     'Engineered a custom Power BI compliance analytics platform from scratch, utilized by 600+ employees to track real-time KPIs, inspection status, and corrective actions across sites',
-    'Automated 80% of manual department reporting workflows using Python and Power Automate, resulting in a 30% reduction in monthly team working hours',
+    'Automated roughly 80% of manual department reporting workflows using Python and Power Automate, resulting in a 30% reduction in monthly team working hours',
     'Deployed AI agents for regulatory research in a live production environment, leveraging GitHub Copilot to cut technical documentation lookup time from hours to minutes',
     'Led the nationwide rollout and training for an in-house digital inspection application for over 100 environmental managers across Georgia-Pacific operations',
     'Runs weekly environmental compliance training for 200+ new plant hires and works directly with plant management to identify operational value creation opportunities'
@@ -251,12 +252,12 @@ async function buildResumePDF(job, summaryText) {
   jobTitle('B.S. Environmental Science | North Carolina State University', 'Raleigh, NC | Graduated August 2024');
   bullet('Minor in Economics');
 
-  jobTitle('Capstone Project: Natural Resource Management', 'January 2024 – May 2024');
+  jobTitle('Capstone Project: Natural Resource Management', 'Raleigh, NC | January 2024 – May 2024');
   bullet('Built Natural Resources Management Plans to solve issues, such as forest fire prevention, optimal land-use allocation, and watershed management strategies');
-  bullet('Collaborated with a multi-disciplinary team to analyze Hofmann Forest (NC), identifying management paths to increase both environmental sustainability and profitability');
-  bullet('Completed a "Business as Usual" assessment across various ecosystems, including watersheds, forests, and farmland, to establish baseline impact metrics');
-  bullet('Performed two comprehensive case studies (independent and group-based) on addressing specific ecological and regulatory challenges');
-  bullet('Utilized advanced Excel modeling to generate numerous sustainability reports, economic feasibility analyses, and data-driven environmental assessments');
+  bullet('Collaborated with a team to analyze how Hofmann Forest in NC can be better managed in a both more environmentally sustainable as well as more profitable way');
+  bullet('Completed a "Business as Usual" assessment of various environments, such as watersheds, forests, and farmland, to establish baseline impact metrics');
+  bullet('Performed two comprehensive case studies (one independent and one with a group) on how respective environmental issues can be addressed');
+  bullet('Utilized advanced Excel modeling to generate numerous reports, including sustainability reports, economic analysis, and data-driven assessments');
 
   // ── ATS KEYWORDS ─────────────────────────────────────────────────────────
   if (allKeywords.length > 0) {

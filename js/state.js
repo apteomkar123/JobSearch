@@ -1,10 +1,11 @@
 // Load resume chunks in parallel for faster download
 (async()=>{
   const NUM_CHUNKS=11;
+  const cacheBuster = Date.now(); // Prevents browser from loading old cached versions
   try{
     const results=await Promise.all(
       Array.from({length:NUM_CHUNKS},(_,i)=>
-        fetch(`${window.RESUME_BASE_URL}resumes_${i}.json`).then(async r => {
+        fetch(`${window.RESUME_BASE_URL}resumes_${i}.json?v=${cacheBuster}`).then(async r => {
           if (r.ok) return r.json();
           // Handle non-200 responses descriptively
           let msg = `HTTP ${r.status}`;

@@ -15,8 +15,9 @@ async function runBulkResumeGeneration() {
     console.log(`📦 Processing Chunk ${chunkIndex} (${i} to ${Math.min(i + CHUNK_SIZE, total)})...`);
 
     for (const job of chunk) {
-      // objective first-person summary template (Employer-Focused & ATS Optimized)
-      const summary = `Imaginative, inquisitive, driven, creative, and highly competent environmental and data professional. By leveraging a B.S. from NC State and two years at Georgia-Pacific owning complex regulatory programs (Title V, SPCC, RCRA), I provide ${job.company} with streamlined industrial compliance and modernized digital operations. Expert in ${job.tags.slice(0,3).join(', ')}, focused on delivering high-integrity reporting and measurable operational value for your organization's environmental and data objectives.`;
+      // Hard-coded Adjectives & Employer-Focused First-Person Summary
+      const adjectives = "Imaginative, inquisitive, driven, creative, and highly competent";
+      const summary = `${adjectives} environmental and data professional. My background includes two years at Georgia-Pacific owning Title V, SPCC, and RCRA programs while building enterprise Power BI solutions. I am prepared to leverage this expertise to streamline regulatory compliance and drive measurable operational value for ${job.company}'s objectives through advanced analytics and technical proficiency in ${job.tags.slice(0,3).join(', ')}.`;
       
       const result = await buildAndStoreResume(job, summary);
       if (result) {
