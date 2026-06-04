@@ -134,19 +134,46 @@ async function buildResumePDF(job, summaryText) {
   // ── SKILLS ───────────────────────────────────────────────────────────────
   const title_l = (job.title||'').toLowerCase();
   const tags_l  = (job.tags||[]).map(t=>t.toLowerCase());
-  const isEHS   = ['ehs','environmental','compliance','coordinator'].some(k=>title_l.includes(k));
-  const isData  = ['data','analyst','analytics','bi'].some(k=>title_l.includes(k)) ||
-                  ['power bi','python','sql'].some(t=>tags_l.includes(t));
+  const allKeywords = [...(job.tags || [])];
+
+  const isEHS   = ['ehs','environmental','compliance','coordinator','specialist'].some(k=>title_l.includes(k));
+  const isData  = ['data','analyst','analytics','bi','automation','python','sql'].some(k=>title_l.includes(k)) ||
+                  ['power bi','python','sql','data analytics'].some(t=>tags_l.includes(t));
   const isGIS   = ['gis','geospatial','spatial'].some(k=>title_l.includes(k));
   const isAI    = ['ai','agent','automation','engineer','developer','software'].some(k=>title_l.includes(k));
   const isImpl  = ['implementation','consultant','solutions','specialist'].some(k=>title_l.includes(k));
 
   sectionHeader('Core Skills');
-  if (isEHS || isImpl) skillLine('Environmental Compliance', ['Title V Air (PCWP-MACT, BMACT)','SPCC','SWPPP / NPDES Stormwater','RCRA Hazardous Waste','Water Quality Monitoring','Method 9','CWA / CAA','NCDEQ Coordination']);
-  if (isData || isAI)  skillLine('Data and Automation', ['Power BI','Python','R','SQL','Power Automate','AI Agent Deployment','GitHub Copilot','Excel']);
-  if (isGIS)           skillLine('GIS and Spatial Analysis', ['ArcGIS Pro','ArcGIS Online','QGIS','Spatial Analysis','Watershed Delineation','Environmental Mapping']);
-  if (isAI || isImpl)  skillLine('AI and Technical', ['AI Agent Deployment','GitHub Copilot','Python Scripting','Power Automate','C# (Self-taught)','Digital Workflow Development']);
-  if (!isEHS && !isData && !isGIS && !isAI) {
+  
+  // ATS Keywords Injection (from Job Tags)
+  if (job.tags && job.tags.length > 0) {
+    skillLine('Areas of Expertise', job.tags);
+  }
+
+  // Logic-based skill groups per Master Document
+  if (isEHS || isImpl) {
+    const list = ['Title V Air (PCWP-MACT, BMACT)','SPCC','SWPPP / NPDES Stormwater','RCRA Hazardous Waste','Water Quality Monitoring','Method 9','CWA / CAA','NCDEQ Coordination'];
+    skillLine('Environmental Compliance', list);
+    allKeywords.push(...list);
+  }
+  if (isData || isAI) {
+    const list = ['Power BI','Python','R','SQL','Power Automate','AI Agent Deployment','GitHub Copilot','Excel'];
+    skillLine('Data and Automation', list);
+    allKeywords.push(...list);
+  }
+  if (isGIS) {
+    const list = ['ArcGIS Pro','ArcGIS Online','QGIS','Spatial Analysis','Watershed Delineation','Environmental Mapping'];
+    skillLine('GIS and Spatial Analysis', list);
+    allKeywords.push(...list);
+  }
+  if (isAI || isImpl || title_l.includes('software')) {
+    const list = ['AI Agent Deployment','GitHub Copilot','Python Scripting','Power Automate','C# (Self-taught)','Digital Workflow Development'];
+    skillLine('AI and Technical', list);
+    allKeywords.push(...list);
+  }
+  
+  // Default fallback for technical skills if no specific match
+  if (!isEHS && !isData && !isGIS && !isAI && !isImpl) {
     skillLine('Technical', ['Python','Power BI','GIS / ArcGIS','Power Automate','GitHub Copilot','Excel','R','SQL']);
   }
   skillLine('Communication', ['Technical Report Writing','Regulatory Coordination','200+ Employee Training','Management Briefings','Cross-functional Coordination']);
@@ -215,16 +242,14 @@ async function buildResumePDF(job, summaryText) {
   bullet('Planned multiple revenue streams: direct consumer sales, commercial facility partnerships, and municipal solid waste contracts');
   y -= 4;
 
-  // ── LYFEWARE / APPWARE ───────────────────────────────────────────────────
-  if (isAI || isImpl || isData) {
-    sectionHeader('Personal Projects');
-    jobTitle('AppWare — Integrated Lifestyle Ecosystem', 'Solo Build | 2024 – Present');
-    bullet('Architected and deployed a multi-app suite (Hungry, Roomies, Jukebox) unified by a custom "Sign in with AppWare" SSO identity provider built on React, Vite, and Supabase Auth with Google and Apple OAuth');
-    bullet('Engineered a cross-app real-time signal bus using PostgreSQL triggers and Supabase Realtime — e.g., automatically triggering high-BPM playlists in Jukebox when a deep-clean chore is started in Roomies');
-    bullet('Designed a unified multi-tenant Supabase schema with Row Level Security policies handling shared household data across grocery lists, expenses, and analytics');
-    bullet('Orchestrated a CI/CD pipeline with TypeScript for end-to-end type safety, Netlify for web hosting, and Expo for cross-platform mobile deployment');
-    y -= 4;
-  }
+  // ── LYFEWARE ─────────────────────────────────────────────────────────────
+  sectionHeader('Personal Projects');
+  jobTitle('LyfeWare — Integrated Lifestyle Ecosystem', 'Solo Build | 2024 – Present');
+  bullet('Architected and deployed a multi-app suite (Pantry, HomeBase, Vinyl) unified by a custom "Sign in with LyfeWare" SSO identity provider built on React, Vite, and Supabase Auth with Google and Apple OAuth');
+  bullet('Engineered a cross-app real-time signal bus using PostgreSQL triggers and Supabase Realtime — e.g., automatically triggering high-BPM playlists in Vinyl when a deep-clean chore is started in HomeBase');
+  bullet('Designed a unified multi-tenant Supabase schema with Row Level Security policies handling shared household data across grocery lists, expenses, and analytics');
+  bullet('Orchestrated a CI/CD pipeline with TypeScript for end-to-end type safety, Netlify for web hosting, and Expo for cross-platform mobile deployment');
+  y -= 4;
 
   // ── EDUCATION ────────────────────────────────────────────────────────────
   checkY(90);
@@ -233,6 +258,18 @@ async function buildResumePDF(job, summaryText) {
   bullet('Minor in Economics');
   bullet('Relevant coursework: Soil Science, Natural Resource Management, Sustainability and Climate Change, Energy and Environment, Capstone (NRM Planning)');
   bullet('Additional coursework: Electrical Engineering — Circuits, Computer Logic, C Programming');
+
+  // ── ATS KEYWORDS ─────────────────────────────────────────────────────────
+  if (allKeywords.length > 0) {
+    sectionHeader('Keywords');
+    bodyText([...new Set(allKeywords)].join(', '));
+  }
+
+  // ── DOCUMENT METADATA ────────────────────────────────────────────────────
+  doc.setTitle(`Resume - Omkar Apte - ${job.company}`);
+  doc.setAuthor('Omkar Apte');
+  doc.setSubject(`Tailored Resume for ${job.title} at ${job.company}`);
+  doc.setKeywords([...new Set(allKeywords)]);
 
   const pdfBytes = await doc.save();
   return pdfBytes;

@@ -1,27 +1,5 @@
 // ── ADD JOB FEATURE ────────────────────────────────────────────────────────────
 
-function getApiKey() {
-  let key = localStorage.getItem('oa_anthropic_key');
-  if(!key) {
-    // Show the key input
-    const inp = document.getElementById('apikeyInput');
-    const banner = document.getElementById('apikey-banner');
-    if(inp && banner) {
-      inp.style.display = 'block';
-      banner.classList.add('show');
-      inp.focus();
-      // Check if they just entered one
-      key = inp.value.trim();
-      if(!key || !key.startsWith('sk-ant-')) {
-        toast('Enter your Anthropic API key first (sk-ant-...)');
-        return null;
-      }
-      localStorage.setItem('oa_anthropic_key', key);
-    }
-  }
-  return key;
-}
-
 window.openAddJob = () => {
   document.getElementById('addJobModal').classList.add('open');
   document.getElementById('jobUrlInput').value = '';
@@ -29,16 +7,8 @@ window.openAddJob = () => {
   document.getElementById('jobProgress').innerHTML = '';
   document.getElementById('parseBtn').disabled = false;
   document.getElementById('parseBtn').textContent = 'Parse & Add Job';
-  const hasKey = !!localStorage.getItem('oa_anthropic_key');
-  const inp = document.getElementById('apikeyInput');
-  const banner = document.getElementById('apikey-banner');
-  if(inp && banner) {
-    inp.style.display = hasKey ? 'none' : 'block';
-    inp.value = '';
-    banner.classList[hasKey ? 'remove' : 'add']('show');
-  }
   setTimeout(() => {
-    const target = !hasKey ? document.getElementById('apikeyInput') : document.getElementById('jobUrlInput');
+    const target = document.getElementById('jobUrlInput');
     if(target) target.focus();
   }, 100);
 };
@@ -82,15 +52,6 @@ function stepFail(msg) {
 }
 
 window.parseJobUrl = async () => {
-  // Save API key if just entered
-  const keyInp = document.getElementById('apikeyInput');
-  if(keyInp && keyInp.style.display !== 'none' && keyInp.value.trim()) {
-    const k = keyInp.value.trim();
-    if(!k.startsWith('sk-ant-')) { toast('API key should start with sk-ant-'); return; }
-    localStorage.setItem('oa_anthropic_key', k);
-    keyInp.style.display = 'none';
-    document.getElementById('apikey-banner').classList.remove('show');
-  }
   const url = document.getElementById('jobUrlInput').value.trim();
   if(!url || !url.startsWith('http')) { toast('Paste a valid job URL first'); return; }
 
@@ -144,7 +105,7 @@ Fetch the URL content first using web search if needed, then extract the data.`,
         const errData = await fetchResp.json();
         if(errData.error) errMsg = typeof errData.error === 'string' ? errData.error : (errData.error.message || JSON.stringify(errData.error));
       } catch(e) {}
-      if(fetchResp.status === 401) { errMsg = 'Invalid API key — check your Anthropic API key'; localStorage.removeItem('oa_anthropic_key'); }
+      if(fetchResp.status === 401) { errMsg = 'Invalid API key — check ANTHROPIC_API_KEY in Netlify environment variables'; }
       if(fetchResp.status === 429) errMsg = 'Rate limited — wait a moment and try again';
       if(fetchResp.status === 400) errMsg = 'Bad request: ' + errMsg;
       throw new Error(errMsg);
@@ -309,9 +270,7 @@ Return ONLY a JSON object (no markdown):
     const msg = err.message || String(err);
     stepFail('Error: ' + msg);
     if(msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
-      step('→ Network error — check your internet connection and that your API key is valid', 'fail');
-      localStorage.removeItem('oa_anthropic_key');
-      step('→ API key cleared — re-open Add Job and enter your key again', 'fail');
+      step('→ Network error — check your internet connection', 'fail');
     }
     console.error('Add job error:', err);
     btn.disabled = false;

@@ -129,17 +129,11 @@
     <div id="panel-single">
       <div class="modal-title">Add New Job</div>
       <div class="modal-sub">Paste any job posting URL — Indeed, LinkedIn, company site, anywhere.<br>Claude will parse it, build a tailored resume, and add it to the dashboard.</div>
-      <div class="apikey-banner" id="apikey-banner">
-        🔑 First time setup: enter your Anthropic API key below (get one free at <b>console.anthropic.com</b>)<br>
-        It's saved locally in your browser and never sent anywhere except Anthropic.
-      </div>
-      <input class="modal-input" id="apikeyInput" type="password" placeholder="sk-ant-... (Anthropic API key)" style="display:none" />
       <input class="modal-input" id="jobUrlInput" type="url" placeholder="https://jobs.company.com/posting/12345" />
       <div class="modal-progress" id="jobProgress"></div>
       <div class="modal-row">
         <button class="btn-primary" id="parseBtn" onclick="parseJobUrl()">Parse & Add Job</button>
         <button class="btn-secondary" onclick="closeAddJob()">Cancel</button>
-        <button class="btn-secondary" onclick="localStorage.removeItem('oa_anthropic_key');toast('API key cleared');openAddJob();" title="Reset API key" style="padding:9px 10px">🔑</button>
       </div>
     </div><!-- /panel-single -->
 

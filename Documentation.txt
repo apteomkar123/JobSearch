@@ -1,5 +1,5 @@
 OMKAR APTE — JOB DASHBOARD DOCUMENTATION
-Last updated: 2026-06-03
+Last updated: 2026-06-04
 
 ════════════════════════════════════════════════════════════
 WHAT WAS DONE
@@ -21,15 +21,16 @@ WHAT WAS DONE
 
    Script loading order in index.html ensures correct dependency resolution.
 
-2. LYFEWARE / APPWARE SECTION ADDED TO RESUME GENERATOR
+2. LYFEWARE SECTION IN RESUME GENERATOR
    Added a "Personal Projects" section to buildResumePDF() in js/resume.js.
-   The AppWare section appears for AI, implementation, and data-focused roles
-   (isAI || isImpl || isData conditions). It covers:
-   - Multi-app suite: Hungry, Roomies, Jukebox with custom SSO identity provider
+   The LyfeWare section appears on EVERY resume (unconditional). It covers:
+   - Multi-app suite: Pantry, HomeBase, Vinyl with custom "Sign in with LyfeWare" SSO
    - React, Vite, Supabase Auth with Google/Apple OAuth
    - Cross-app signal bus using PostgreSQL triggers and Supabase Realtime
    - Multi-tenant RLS schema with household data management
    - CI/CD pipeline: TypeScript + Netlify + Expo
+   Note: Old names (AppWare, Hungry, Roomies, Jukebox) renamed to
+   (LyfeWare, Pantry, HomeBase, Vinyl) across resume.js and LyfeWare Resume Input.txt.
 
 3. 50 NEW ENVIRONMENTAL & SUSTAINABILITY JOBS ADDED
    Jobs 335–384 (Batch 22) added to js/jobs-data.js.
@@ -99,6 +100,39 @@ WHAT WAS DONE
 5. WHY THIS ROLE SECTION
    Already implemented in the original file (confirmed present in resume.js).
    Shows on resumes for all jobs that have a job.why field (all jobs have this).
+
+6. FIX — API KEY PROMPT REMOVED FROM ADD JOB MODAL (2026-06-04)
+   The "Add Job" modal was prompting users to enter an Anthropic API key.
+   This was unnecessary since the Netlify function (netlify/functions/parse-job.js)
+   already reads the key from process.env.ANTHROPIC_API_KEY server-side.
+   Removed:
+   - getApiKey() function from js/api.js
+   - API key banner HTML from index.html (apikey-banner div + apikeyInput field)
+   - API key save/check logic from openAddJob() and parseJobUrl() in js/api.js
+   - 🔑 reset button from the modal
+   The modal now goes directly to the URL input field on open.
+
+8. LYFEWARE RENAME + UNIVERSAL RESUME SECTION (2026-06-04)
+   Renamed all app/project names across resume.js and LyfeWare Resume Input.txt:
+   - AppWare → LyfeWare
+   - Hungry  → Pantry
+   - Jukebox → Vinyl
+   - Roomies → HomeBase
+   The Personal Projects / LyfeWare section is now unconditional — it appears on
+   EVERY generated resume, regardless of job type.
+   Created "Resume Master Document.txt" — a portable reference for building
+   tailored resumes anywhere (section order, bullet selection rules, LyfeWare
+   bullets, formatting specs, full candidate profile summary).
+
+7. FIX — RESUMES SHOWING "RESUME LOADING" INDEFINITELY (2026-06-04)
+   The render() function checked Object.keys(RESUMES).length === 0 to decide
+   whether to show "Resumes loading..." vs "No resume for this role yet".
+   Since the resume chunk files (resumes_0.json through resumes_11.json) don't
+   exist, all fetches return 404, RESUMES stays empty {}, and the check always
+   evaluated to true — showing "Resumes loading..." forever.
+   Fix: Added resumesLoaded boolean flag to js/state.js. Set to true after the
+   async chunk loading completes (whether chunks loaded or not). Updated render()
+   and toggleRecent() in js/ui.js to use !resumesLoaded for the loading state.
 
 ════════════════════════════════════════════════════════════
 WHAT WASN'T DONE / KNOWN LIMITATIONS

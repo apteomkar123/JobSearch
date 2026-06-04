@@ -168,7 +168,13 @@ window.toggleRecent=(btn)=>{
               <span style="font-family:var(--font-mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.12em">Status</span>
               ${STATUSES.map(ss=>`<button class="status-chip${st===ss?' active':''}" style="--chip-color:${SC[ss]}" onclick="setStatus(${job.id},'${ss}')">${ss}</button>`).join('')}
             </div>
-            ${hr?`<button onclick="downloadResume(${job.id})" class="btn btn-dl">⬇ Download Resume</button>`:`<span style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">⟳ Resume building...</span>`}
+            ${hr
+              ? `<button onclick="downloadResume(${job.id})" class="btn btn-dl">⬇ Download Resume</button>`
+              : !resumesLoaded
+                ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">⟳ Resumes loading...</span>`
+                : window.resumeLoadError 
+                  ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--red)">⚠ ${window.resumeLoadError}</span>` 
+                  : `<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">No resume for this role yet</span>`}
           </div>
         </div>
       </div>`;
@@ -365,9 +371,11 @@ function render(){
           </div>
           ${hr
             ?`<button onclick="downloadResume(${job.id})" class="btn btn-dl">⬇ Download Resume</button>`
-            :Object.keys(RESUMES).length===0
+            :!resumesLoaded
               ?`<span style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">⟳ Resumes loading...</span>`
-              :`<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">No resume for this role yet</span>`
+              :window.resumeLoadError
+                ?`<span style="font-family:var(--font-mono);font-size:10px;color:var(--red)">⚠ ${window.resumeLoadError}</span>`
+                :`<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">No resume for this role yet</span>`
           }
           ${job.recruiter ? `
           <div style="margin-top:14px;padding:12px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)">
@@ -385,4 +393,3 @@ function render(){
     </div>`;
   }).join('');
 }
-
