@@ -9,7 +9,7 @@ async function buildResumePDF(job, summaryText) {
   const ital = await doc.embedFont(StandardFonts.TimesRomanItalic);
 
   const PAGE_W = 612, PAGE_H = 792;
-  const ML = 54, MR = 54, MT = 44, MB = 44;
+  const ML = 54, MR = 54, MT = 40, MB = 40;
   const TW = PAGE_W - ML - MR;
 
   let page = doc.addPage([PAGE_W, PAGE_H]);
@@ -54,82 +54,76 @@ async function buildResumePDF(job, summaryText) {
 
   function sectionHeader(title) {
     checkY(22);
-    y -= 6;
-    page.drawText(title.toUpperCase(), { x: ML, y: y - 11, size: 10.5, font: bold, color: BLACK });
-    y -= 14;
+    y -= 4;
+    page.drawText(title.toUpperCase(), { x: ML, y: y - 10, size: 10, font: bold, color: BLACK });
+    y -= 12;
     page.drawLine({ start:{x:ML,y}, end:{x:ML+TW,y}, thickness:0.6, color:BLACK });
-    y -= 5;
+    y -= 4;
   }
 
   function jobTitle(title, meta) {
-    checkY(32);
-    y -= 4;
-    const tlines = drawText(title, ML, 10, bold, BLACK, TW);
-    writeLines(tlines, ML, 10, bold, BLACK, 13);
-    const mlines = drawText(meta, ML, 9.5, ital, LGRAY, TW);
-    writeLines(mlines, ML, 9.5, ital, LGRAY, 12);
+    checkY(28);
     y -= 2;
+    const tlines = drawText(title, ML, 9.5, bold, BLACK, TW);
+    writeLines(tlines, ML, 9.5, bold, BLACK, 11.5);
+    const mlines = drawText(meta, ML, 9, ital, LGRAY, TW);
+    writeLines(mlines, ML, 9, ital, LGRAY, 11);
   }
 
   function bullet(text) {
     const bx = ML + 10;
     const bw = TW - 10;
-    const lines = drawText(text, bx, 9.5, reg, BLACK, bw);
-    checkY(lines.length * 13 + 2);
-    page.drawText('•', { x: ML, y: y - 9.5, size: 9.5, font: reg, color: BLACK });
-    writeLines(lines, bx, 9.5, reg, BLACK, 13);
+    const lines = drawText(text, bx, 9.2, reg, BLACK, bw);
+    checkY(lines.length * 11.5 + 2);
+    page.drawText('•', { x: ML, y: y - 9.2, size: 9.2, font: reg, color: BLACK });
+    writeLines(lines, bx, 9.2, reg, BLACK, 11.5);
   }
 
   function bodyText(text) {
-    const lines = drawText(text, ML, 9.5, reg, BLACK, TW);
-    checkY(lines.length * 13 + 4);
-    writeLines(lines, ML, 9.5, reg, BLACK, 13);
-    y -= 2;
+    const lines = drawText(text, ML, 9.2, reg, BLACK, TW);
+    checkY(lines.length * 11.5 + 4);
+    writeLines(lines, ML, 9.2, reg, BLACK, 11.5);
+    y -= 1;
   }
 
   function skillLine(label, items) {
     const fullText = items.join(', ');
     const bx = ML;
-    const availW = TW;
-    // Bold label
-    const labelW = bold.widthOfTextAtSize(label + ':  ', 9.5);
-    const allLines = drawText(fullText, bx + labelW, 9.5, reg, BLACK, availW - labelW);
-    checkY(allLines.length * 13 + 2);
-    // First line has the bold label prefix
-    page.drawText(label + ':  ', { x: bx, y: y - 9.5, size: 9.5, font: bold, color: BLACK });
-    if (allLines[0]) {
-      page.drawText(allLines[0], { x: bx + labelW, y: y - 9.5, size: 9.5, font: reg, color: BLACK });
+    const labelW = 125; // Aligns all skill lists vertically
+    const availW = TW - labelW;
+    const lines = drawText(fullText, bx + labelW, 9.2, reg, BLACK, availW);
+    checkY(lines.length * 11.5 + 2);
+    page.drawText(label + ':', { x: bx, y: y - 9.2, size: 9.2, font: bold, color: BLACK });
+    if (lines[0]) {
+      page.drawText(lines[0], { x: bx + labelW, y: y - 9.2, size: 9.2, font: reg, color: BLACK });
     }
-    y -= 13;
-    for (let i = 1; i < allLines.length; i++) {
-      checkY(13);
-      page.drawText(allLines[i], { x: bx + labelW, y: y - 9.5, size: 9.5, font: reg, color: BLACK });
-      y -= 13;
+    y -= 11.5;
+    for (let i = 1; i < lines.length; i++) {
+      checkY(11.5);
+      page.drawText(lines[i], { x: bx + labelW, y: y - 9.2, size: 9.2, font: reg, color: BLACK });
+      y -= 11.5;
     }
-    y -= 1;
   }
 
   // ── NAME + CONTACT ────────────────────────────────────────────────────────
-  const nameW = bold.widthOfTextAtSize('Omkar Apte', 19);
+  const nameW = bold.widthOfTextAtSize('Omkar Apte', 18);
   page.drawText('Omkar Apte', {
-    x: ML + (TW - nameW) / 2, y: y - 19, size: 19, font: bold, color: BLACK
+    x: ML + (TW - nameW) / 2, y: y - 18, size: 18, font: bold, color: BLACK
   });
-  y -= 26;
+  y -= 24;
   const contact = 'omkarapte2010@gmail.com  •  (919) 717-7472  •  Raleigh, NC  •  linkedin.com/in/omkar-apte-5ab8b7132';
-  const cw = reg.widthOfTextAtSize(contact, 9);
-  page.drawText(contact, { x: ML + (TW - cw) / 2, y: y - 9, size: 9, font: reg, color: LGRAY });
-  y -= 18;
+  const cw = reg.widthOfTextAtSize(contact, 8.5);
+  page.drawText(contact, { x: ML + (TW - cw) / 2, y: y - 8.5, size: 8.5, font: reg, color: LGRAY });
+  y -= 15;
 
   // ── SUMMARY ───────────────────────────────────────────────────────────────
   sectionHeader('Summary');
   bodyText(summaryText);
-  y -= 3;
 
   // ── CERTIFICATIONS ────────────────────────────────────────────────────────
   sectionHeader('Certifications');
   bullet('Method 9 Visible Emissions Evaluator — certified biannually');
   bullet('NCMA Water Quality Sampling Certification');
-  y -= 3;
 
   // ── SKILLS ───────────────────────────────────────────────────────────────
   const title_l = (job.title||'').toLowerCase();
@@ -184,7 +178,6 @@ async function buildResumePDF(job, summaryText) {
   // ────────────────────────────────────────────────────────────────────────
 
   skillLine('Communication', ['Technical Report Writing','Regulatory Coordination','200+ Employee Training','Management Briefings','Cross-functional Coordination']);
-  y -= 3;
 
   // ── WHY THIS ROLE ─────────────────────────────────────────────────────────
   if (job.why) {
@@ -196,7 +189,6 @@ async function buildResumePDF(job, summaryText) {
       .replace(/\bthis is the\b.* applicable job/gi, '').trim();
     const whySentences = whyText.split('.').filter(s=>s.trim()).slice(0,2);
     bodyText(whySentences.join('. ').trim() + '.');
-    y -= 3;
   }
 
   // ── GP EXPERIENCE ─────────────────────────────────────────────────────────
@@ -215,27 +207,27 @@ async function buildResumePDF(job, summaryText) {
   ];
 
   for (const b of gpBullets) bullet(b);
-  y -= 4;
+  y -= 2;
 
   // ── QORVO ────────────────────────────────────────────────────────────────
   jobTitle('Mobile Engineering Intern | Qorvo', 'Greensboro, NC | May 2022 – August 2022');
   bullet('Worked in the RF characterization lab running hardware tests on mobile chips — operated handlers, set up test routines, and logged results for the engineering team');
   bullet('Learned Spotfire and built data visualization dashboards to help engineers track chip performance across test batches and flag outliers');
   bullet('Got direct exposure to RF chip design, the cellular network stack, and device validation processes from early testing through production sign-off');
-  y -= 4;
+  y -= 2;
 
   jobTitle('Mobile Engineering Intern | Qorvo', 'Greensboro, NC | May 2021 – August 2021');
   bullet('Taught myself C# in the first few weeks and built an internal data parsing application — took Excel files from multiple engineers, cleaned and reformatted them for a downstream code generator used in chip characterization');
   bullet('The tool went into regular production use and eliminated a manual, error-prone file prep step the team had been doing by hand');
   bullet('Scoped, built, tested, and shipped the project independently — no prior C# experience, minimal guidance, first real software deliverable');
-  y -= 4;
+  y -= 2;
 
   // ── FERTIVO ──────────────────────────────────────────────────────────────
   jobTitle('Co-Founder and CEO | Fertivo', 'Cary, NC | September 2017 – April 2018');
   bullet('Co-founded a startup building a trash can that converted organic waste into fertilizer — developed the concept, assembled the founding team, and drove product direction from idea through prototype');
   bullet('Led weekly team meetings, coordinated hardware prototyping and business development in parallel, and reached out to competitors to map the market landscape');
   bullet('Planned multiple revenue streams: direct consumer sales, commercial facility partnerships, and municipal solid waste contracts');
-  y -= 4;
+  y -= 2;
 
   // ── LYFEWARE ─────────────────────────────────────────────────────────────
   sectionHeader('Personal Projects');
@@ -244,7 +236,7 @@ async function buildResumePDF(job, summaryText) {
   bullet('Engineered a cross-app real-time signal bus using PostgreSQL triggers and Supabase Realtime — e.g., automatically triggering high-BPM playlists in Vinyl when a deep-clean chore is started in HomeBase');
   bullet('Designed a unified multi-tenant Supabase schema with Row Level Security policies handling shared household data across grocery lists, expenses, and analytics');
   bullet('Orchestrated a CI/CD pipeline with TypeScript for end-to-end type safety, Netlify for web hosting, and Expo for cross-platform mobile deployment');
-  y -= 4;
+  y -= 2;
 
   // ── EDUCATION ────────────────────────────────────────────────────────────
   checkY(90);
