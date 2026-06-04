@@ -4,9 +4,9 @@ async function buildResumePDF(job, summaryText) {
   const { PDFDocument, rgb, StandardFonts } = PDFLib;
 
   const doc  = await PDFDocument.create();
-  const bold = await doc.embedFont(StandardFonts.TimesBold);
+  const bold = await doc.embedFont(StandardFonts.TimesRomanBold);
   const reg  = await doc.embedFont(StandardFonts.TimesRoman);
-  const ital = await doc.embedFont(StandardFonts.TimesItalic);
+  const ital = await doc.embedFont(StandardFonts.TimesRomanItalic);
 
   const PAGE_W = 612, PAGE_H = 792;
   const ML = 54, MR = 54, MT = 44, MB = 44;
@@ -191,7 +191,7 @@ async function buildResumePDF(job, summaryText) {
     // Convert why from 2nd person to 1st
     let whyText = (job.why||'').replace(/\byourself\b/gi,'myself').replace(/\byour\b/gi,'my').replace(/\byou\b/gi,'I')
       .replace(/\byou've\b/gi,"I've").replace(/\byou're\b/gi,"I'm").replace(/\byours\b/gi,'mine')
-      .replace(/\bon the list\.?/gi, '').replace(/\bon the board\.?/gi, '')
+      .replace(/\bon the (list|board)\.?/gi, '')
       .replace(/\bthis is the\b.* applicable job/gi, '').trim();
     const whySentences = whyText.split('.').filter(s=>s.trim()).slice(0,2);
     bodyText(whySentences.join('. ').trim() + '.');

@@ -16,7 +16,7 @@ async function runBulkResumeGeneration() {
 
     for (const job of chunk) {
       // objective first-person summary template (Employer-Focused & ATS Optimized)
-      const summary = `Imaginative, inquisitive, driven, creative, and highly competent environmental and data professional. Leveraging a B.S. from NC State and 2 years at Georgia-Pacific owning complex regulatory programs (Title V, SPCC, RCRA) to provide ${job.company} with streamlined industrial compliance and modernized digital operations. Expert in ${job.tags.slice(0,3).join(', ')}, focused on delivering high-integrity reporting and measurable operational value for your specific environmental and data objectives.`;
+      const summary = `Imaginative, inquisitive, driven, creative, and highly competent environmental and data professional. By leveraging a B.S. from NC State and two years at Georgia-Pacific owning complex regulatory programs (Title V, SPCC, RCRA), I provide ${job.company} with streamlined industrial compliance and modernized digital operations. Expert in ${job.tags.slice(0,3).join(', ')}, focused on delivering high-integrity reporting and measurable operational value for your organization's environmental and data objectives.`;
       
       const result = await buildAndStoreResume(job, summary);
       if (result) {
