@@ -1,6 +1,6 @@
 // Load resume chunks in parallel for faster download
 (async()=>{
-  const NUM_CHUNKS=11;
+  const NUM_CHUNKS=12;
   const cacheBuster = Date.now(); // Prevents browser from loading old cached versions
   try{
     const results=await Promise.all(

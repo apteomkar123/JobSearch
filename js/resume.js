@@ -111,7 +111,7 @@ async function buildResumePDF(job, summaryText) {
     height += 2; // Initial y decrement in jobTitle
     const tlines = drawText(title, ML, 9.2, bold, BLACK, TW);
     height += tlines.length * 11; // Line height for title
-    const mlines = drawText(meta, ML, 8.8, ital, TW, TW);
+    const mlines = drawText(meta, ML, 8.8, ital, LGRAY, TW);
     height += mlines.length * 10.5; // Line height for meta
     return height;
   }
@@ -229,18 +229,51 @@ async function buildResumePDF(job, summaryText) {
   sectionHeader('Professional Experience');
 
   const gpTitle = 'Environmental Coordinator | Georgia-Pacific (Koch Industries)';
-  const gpBullets = [
-    'Owns and operates five active regulatory programs across two manufacturing facilities — Title V air, SPCC, SWPPP, RCRA hazardous waste, and stormwater — maintaining a record of zero major violations',
-    'Manages Title V air permit compliance including PCWP-MACT and BMACT standards; coordinates annual certifications, permit deviations, and all NCDEQ agency correspondence',
-    'Directs monthly water quality sampling under NCMA certification and conducts regular compliance audits to manage facility-wide corrective actions through to closure',
-    'Engineered a custom Power BI compliance analytics platform from scratch, utilized by 600+ employees to track real-time KPIs, inspection status, and corrective actions across sites',
-    'Automated roughly 80% of manual department reporting workflows using Python and Power Automate, resulting in a 30% reduction in monthly team working hours',
-    'Deployed AI agents for regulatory research in a live production environment, leveraging GitHub Copilot to cut technical documentation lookup time from hours to minutes',
-    'Led the nationwide rollout and training for an in-house digital inspection application for over 100 environmental managers across Georgia-Pacific operations',
-    'Runs weekly environmental compliance training for 200+ new plant hires and works directly with plant management to identify operational value creation opportunities'
-  ];
+  
+  const bulletsPool = {
+    compliance: [
+      'Owns five active regulatory programs across two plywood and lumber facilities — Title V air, SPCC, SWPPP, RCRA hazardous waste, and stormwater — with no major violations under any of them',
+      'Manages Title V air permit compliance including PCWP-MACT and BMACT standards; coordinates permit deviations, compliance certifications, and NCDEQ correspondence',
+      'Runs monthly water quality sampling under NCMA certification; maintains SWPPP documentation and stormwater BMP inspections for both facilities',
+      'Conducts regular compliance audits across SPCC, stormwater, hazardous waste, and air programs; manages corrective actions through to closure'
+    ],
+    data: [
+      'Built a Power BI compliance analytics dashboard from scratch — used across two facilities by 600+ employees to track KPIs, inspection status, and corrective actions in real time',
+      'Automated roughly 80% of manual department reporting using Python and Power Automate, saving the team about 30% of monthly working hours'
+    ],
+    ai: [
+      'Deployed AI agents for regulatory research — cuts permit condition lookup time from hours to minutes and runs in a live production environment',
+      'Uses GitHub Copilot to build and maintain in-house automation tools in production, without external IT support'
+    ],
+    impl: [
+      'Led the rollout of the company\'s in-house inspection application — assisted with development and testing, produced training materials, and trained 100+ environmental managers nationally'
+    ],
+    always: [
+      'Runs weekly environmental compliance training for new plant hires and works directly with plant management on facility operations'
+    ]
+  };
 
-  drawUnbreakableJobBlock(gpTitle, 'Dudley, NC | June 2024 – Present', gpBullets, 2);
+  let selectedBullets = [];
+  if (isImpl) {
+    selectedBullets = [bulletsPool.impl[0], ...bulletsPool.compliance.slice(0,2), ...bulletsPool.data, bulletsPool.always[0]];
+  } else if (isAI) {
+    selectedBullets = [...bulletsPool.ai, ...bulletsPool.data, bulletsPool.always[0]];
+  } else if (isData) {
+    selectedBullets = [...bulletsPool.data, bulletsPool.compliance[0], bulletsPool.always[0]];
+  } else if (isGIS) {
+    selectedBullets = [bulletsPool.compliance[2], ...bulletsPool.compliance.slice(0,2), bulletsPool.always[0]];
+  } else if (isEHS) {
+    selectedBullets = [...bulletsPool.compliance, bulletsPool.always[0]];
+  } else {
+    selectedBullets = [
+      'Owns Title V air, SPCC, SWPPP, RCRA hazardous waste, stormwater, and water quality programs across two manufacturing facilities — no major violations',
+      'Built Power BI compliance dashboard (600+ users), automated 80% of manual tasks with Python and Power Automate',
+      'Deployed AI agents for regulatory research; led nationwide inspection app rollout and trained 100+ managers',
+      bulletsPool.always[0]
+    ];
+  }
+
+  drawUnbreakableJobBlock(gpTitle, 'Dudley, NC | June 2024 – Present', selectedBullets, 2);
 
   // ── QORVO ────────────────────────────────────────────────────────────────
   const qorvo1Bullets = [

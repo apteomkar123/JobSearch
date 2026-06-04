@@ -41,5 +41,12 @@ function lsLoad(){
   try{window.statuses=JSON.parse(localStorage.getItem('oa_s')||'{}');}catch(e){}
   try{window.flags=JSON.parse(localStorage.getItem('oa_f')||'{}');}catch(e){}
   try{window.coverLetters=JSON.parse(localStorage.getItem('oa_c')||'{}');}catch(e){}
+  // Load custom jobs added via UI
+  try {
+    const custom = JSON.parse(localStorage.getItem('oa_custom_jobs') || '[]');
+    custom.forEach(cj => {
+      if(!window.ALL_JOBS.find(j => j.id === cj.id)) window.ALL_JOBS.push(cj);
+    });
+  } catch(e) {}
 }
 function scheduleSave(){clearTimeout(window.saveTimer);window.saveTimer=setTimeout(sbSave,600);}

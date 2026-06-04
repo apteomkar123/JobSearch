@@ -71,12 +71,12 @@ window.parseBulkUrls = async () => {
         body:JSON.stringify({
           model:'claude-sonnet-4-20250514', max_tokens:2000,
           tools:[{type:'web_search_20250305',name:'web_search'}],
-          system:`Extract job data from a URL. Return ONLY a JSON object: {title,company,companySize,type,pay,payNum,url,fit,source,tags,benefits,bonus,why,resume_angle,badge,badgeColor}. No markdown.`,
+          system:`Extract job data from a URL. Return ONLY a JSON object: {title,company,companySize,type,pay,payNum,url,fit,source,tags,benefits,bonus,why,resume_angle,badge,badgeColor}. No markdown. Estimate 'fit' (1-100) for Omkar Apte: Env Coordinator 2 years at Georgia-Pacific, owns Title V/SPCC/SWPPP/RCRA programs, Power BI, Python automation, AI agents, B.S. Env Science NC State.`,
           messages:[{role:'user',content:`Extract job data from: ${url}`}]
         })
       });
       const data = await resp.json();
-      const txt  = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+      const txt  = (data.content || []).filter(b=>b.type==='text').map(b=>b.text).join('\n');
       const m    = txt.match(/\{[\s\S]*\}/);
       if(!m) throw new Error('No JSON');
       const job  = JSON.parse(m[0]);
@@ -90,7 +90,11 @@ window.parseBulkUrls = async () => {
         benefits:job.benefits||'',bonus:job.bonus||'',why:job.why||'',
         resume_angle:job.resume_angle||'',badge:job.badge||'New Find',
         badgeColor:job.badgeColor||'#0891b2',
-        recruiter:{name:null,linkedin_search:`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent((job.company||'').split('(')[0].trim())}+recruiter`,note:'Newly added.'},
+        recruiter:{
+          name: null,
+          linkedin_search: `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent((job.company||'').split('(')[0].trim())}+recruiter+OR+%22talent+acquisition%22`,
+          note: `Newly added job — search LinkedIn for ${(job.company||'').split('(')[0].trim()} recruiter.`
+        },
         status:'Not Applied'};
       window.ALL_JOBS.push(newJob);
       window.RESUMES[String(newId)] = null;
@@ -98,13 +102,21 @@ window.parseBulkUrls = async () => {
       if(dots.length) dots[dots.length-1].className='step-dot done';
       prog.innerHTML += `&nbsp;&nbsp;→ Added: ${job.title} @ ${job.company}<br>`;
       added++;
+
+      // Persist new job locally
+      try {
+        const customJobs = JSON.parse(localStorage.getItem('oa_custom_jobs') || '[]');
+        customJobs.push(newJob);
+        localStorage.setItem('oa_custom_jobs', JSON.stringify(customJobs));
+      } catch(e) {}
+
       try{
         const rr = await fetch('/.netlify/functions/parse-job',{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,
-            messages:[{role:'user',content:`Write a 2-sentence resume summary for: ${newJob.title} at ${newJob.company}. Candidate: Environmental Coordinator at GP 2 years, Title V/SPCC/SWPPP/RCRA/stormwater, Power BI 600+ users, Python 80% automation, AI agents. Return ONLY the summary.`}]})
+          body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,
+            messages:[{role:'user',content:`Write a professional resume summary. Lead with: "Imaginative, inquisitive, driven, creative, and highly competent environmental and data professional." Tailor it for: ${newJob.title} at ${newJob.company}. Focus on how candidate (Omkar Apte) solves needs. 1st person objective style. Return ONLY the 2-3 sentence summary.`}]})
         });
         const rd = await rr.json();
-        const summary = (rd.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+        const summary = (rd.content || []).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();
         if(summary) await buildAndStoreResume(newJob, summary);
       }catch(e){}
     }catch(e){
@@ -116,7 +128,7 @@ window.parseBulkUrls = async () => {
     if(i<urls.length-1) await new Promise(r=>setTimeout(r,1200));
   }
 
-  window.updateStats(); window.render();
+  window.updateStats(); window.render(); window.scheduleSave();
   const ns=document.querySelector('.nav-sub');
   if(ns) ns.textContent=`Tech × Environment · ${window.ALL_JOBS.length} opportunities tracked`;
   prog.innerHTML += `<br><b>${added} added${failed?`, ${failed} failed`:''}.</b>`;
@@ -127,8 +139,8 @@ window.parseBulkUrls = async () => {
 window.toggleRecent=(btn)=>{
   const active = btn.classList.toggle('active');
   if(active){
-    // Show 10 most recently added (highest IDs)
-    const sorted=[...window.ALL_JOBS].sort((a,b)=>b.id-a.id).slice(0,10);
+    // Show 20 most recently added (highest IDs)
+    const sorted=[...window.ALL_JOBS].sort((a,b)=>b.id-a.id).slice(0,20);
     const cards=document.getElementById('cards'); if(!cards)return;
     const s=j=>SRC[j.source]||SRC.direct;
     cards.innerHTML=sorted.map(job=>{
@@ -185,7 +197,7 @@ window.toggleRecent=(btn)=>{
       const lbl=document.createElement('div');
       lbl.id='recent-label';
       lbl.style.cssText='font-family:var(--font-mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px;margin-top:-8px;';
-      lbl.textContent='Showing 10 most recently added jobs';
+      lbl.textContent='Showing 20 most recently added jobs';
       document.getElementById('cards').before(lbl);
     }
   } else {

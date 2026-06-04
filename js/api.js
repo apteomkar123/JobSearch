@@ -69,7 +69,7 @@ window.parseJobUrl = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         system: `You are a job data extraction assistant. Your ONLY job is to extract structured data from a job posting URL and return it as a JSON object. 
@@ -113,7 +113,7 @@ Fetch the URL content first using web search if needed, then extract the data.`,
     const fetchData = await fetchResp.json();
 
     // Extract text content from response
-    const rawText = fetchData.content
+    const rawText = (fetchData.content || [])
       .filter(b => b.type === 'text')
       .map(b => b.text)
       .join('\n');
@@ -171,24 +171,12 @@ Fetch the URL content first using web search if needed, then extract the data.`,
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 2000,
-        system: `You write resume summaries and identify which experience bullets to highlight for job applications.
+        system: `You write resume summaries. The candidate is Omkar Apte. Write the summary in a professional, first-person objective style. Lead EXACTLY with: "Imaginative, inquisitive, driven, creative, and highly competent environmental and data professional." Focus entirely on how the candidate's qualifications solve the specific needs of the employer. Do NOT use "you" or "your" to refer to the candidate. Do NOT use meta-commentary.
+Candidate Profile: Env Coordinator at GP (2yrs), Title V/SPCC/SWPPP/RCRA owner, Power BI (600+ users), Python automation, AI agents/Copilot, B.S. Env Science NC State.
 
-The candidate is Omkar Apte. Write the summary in a professional, first-person objective style. Lead exactly with: "Imaginative, inquisitive, driven, creative, and highly competent environmental and data professional." Focus entirely on how the candidate's qualifications solve the needs of the employer. Do NOT use "you" or "your" to refer to the candidate. Do NOT use meta-commentary like "on the list".
-The candidate is Omkar Apte. Write the summary in a professional, first-person objective style. Lead EXACTLY with: "Imaginative, inquisitive, driven, creative, and highly competent environmental and data professional." Focus entirely on how the candidate's qualifications solve the specific needs of the employer. Do NOT use "you" or "your" to refer to the candidate. Do NOT use meta-commentary like "on the list" or "most applicable".
-- Environmental Coordinator at Georgia-Pacific (Koch Industries), Dudley NC, June 2024-Present
-- Owns Title V air, SPCC, SWPPP, RCRA hazardous waste, stormwater, water quality programs
-- Built Power BI compliance dashboard (600+ users), automated 80% of manual tasks with Python/Power Automate
-- Deployed AI agents for regulatory research, uses GitHub Copilot, converted paper processes to digital
-- Led nationwide inspection app rollout, trained 100+ managers nationally
-- Method 9 certified, NCMA Water Quality certified, no major violations
-- B.S. Environmental Science NC State, minor in Economics
-- Self-taught Python, Power BI, GIS, C# (built production app at Qorvo)
-- Two Qorvo internships: RF lab work, built C# data parsing app (production)
-- Co-founded Fertivo startup 2017-2018
-
-Return ONLY a JSON object (no markdown):
+Return ONLY a JSON object:
 {
   "summary": "2-3 sentence resume summary tailored to this specific role. Human, specific, not braggy.",
   "gp_focus": ["list of 3-4 keywords describing which GP experience to emphasize: e.g. 'compliance', 'data/automation', 'gis', 'ai/tech', 'training', 'water', 'air'"],
@@ -202,8 +190,11 @@ Return ONLY a JSON object (no markdown):
     });
 
     const resumeData = await resumeResp.json();
-    const resumeText = resumeData.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
-    let resumeMeta = { summary: '', gp_focus: [], filename: `Omkar Apte (${newJob.company} - ${newJob.title}) Resume.pdf` };
+    const resumeText = (resumeData.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('\n');
+    let resumeMeta = { summary: '', gp_focus: [], filename: `Omkar Apte (${newJob.company.split('(')[0].trim()} - ${newJob.title}) Resume.pdf` };
     try {
       const rm = resumeText.match(/\{[\s\S]*\}/);
       if(rm) resumeMeta = {...resumeMeta, ...JSON.parse(rm[0])};
