@@ -9,7 +9,7 @@ async function buildResumePDF(job, summaryText) {
   const ital = await doc.embedFont(StandardFonts.TimesRomanItalic);
 
   const PAGE_W = 612, PAGE_H = 792;
-  const ML = 54, MR = 54, MT = 40, MB = 40;
+  const ML = 54, MR = 54, MT = 36, MB = 36; // Slightly reduced margins for more space
   const TW = PAGE_W - ML - MR;
 
   let page = doc.addPage([PAGE_W, PAGE_H]);
@@ -55,54 +55,88 @@ async function buildResumePDF(job, summaryText) {
   function sectionHeader(title) {
     checkY(22);
     y -= 4;
-    page.drawText(title.toUpperCase(), { x: ML, y: y - 10, size: 10, font: bold, color: BLACK });
-    y -= 12;
+    page.drawText(title.toUpperCase(), { x: ML, y: y - 9.5, size: 9.5, font: bold, color: BLACK }); // Slightly smaller header
+    y -= 11;
     page.drawLine({ start:{x:ML,y}, end:{x:ML+TW,y}, thickness:0.6, color:BLACK });
     y -= 4;
   }
 
   function jobTitle(title, meta) {
-    checkY(28);
+    // checkY is now handled by drawUnbreakableBlock for the entire block
     y -= 2;
-    const tlines = drawText(title, ML, 9.5, bold, BLACK, TW);
-    writeLines(tlines, ML, 9.5, bold, BLACK, 11.5);
-    const mlines = drawText(meta, ML, 9, ital, LGRAY, TW);
-    writeLines(mlines, ML, 9, ital, LGRAY, 11);
+    const tlines = drawText(title, ML, 9.2, bold, BLACK, TW); // Slightly smaller font
+    writeLines(tlines, ML, 9.2, bold, BLACK, 11); // Tighter line height
+    const mlines = drawText(meta, ML, 8.8, ital, LGRAY, TW); // Slightly smaller font
+    writeLines(mlines, ML, 8.8, ital, LGRAY, 10.5); // Tighter line height
   }
 
   function bullet(text) {
     const bx = ML + 10;
     const bw = TW - 10;
-    const lines = drawText(text, bx, 9.2, reg, BLACK, bw);
-    checkY(lines.length * 11.5 + 2);
-    page.drawText('•', { x: ML, y: y - 9.2, size: 9.2, font: reg, color: BLACK });
-    writeLines(lines, bx, 9.2, reg, BLACK, 11.5);
+    const lines = drawText(text, bx, 9, reg, BLACK, bw); // Slightly smaller font
+    checkY(lines.length * 11 + 2); // Tighter line height
+    page.drawText('•', { x: ML, y: y - 9, size: 9, font: reg, color: BLACK });
+    writeLines(lines, bx, 9, reg, BLACK, 11); // Tighter line height
   }
 
   function bodyText(text) {
-    const lines = drawText(text, ML, 9.2, reg, BLACK, TW);
-    checkY(lines.length * 11.5 + 4);
-    writeLines(lines, ML, 9.2, reg, BLACK, 11.5);
+    const lines = drawText(text, ML, 9, reg, BLACK, TW); // Slightly smaller font
+    checkY(lines.length * 11 + 4); // Tighter line height
+    writeLines(lines, ML, 9, reg, BLACK, 11); // Tighter line height
     y -= 1;
   }
 
   function skillLine(label, items) {
     const fullText = items.join(', ');
     const bx = ML;
-    const labelW = 125; // Aligns all skill lists vertically
+    const labelW = 110; // Aligns all skill lists vertically, slightly reduced width
     const availW = TW - labelW;
-    const lines = drawText(fullText, bx + labelW, 9.2, reg, BLACK, availW);
-    checkY(lines.length * 11.5 + 2);
-    page.drawText(label + ':', { x: bx, y: y - 9.2, size: 9.2, font: bold, color: BLACK });
+    const lines = drawText(fullText, bx + labelW, 9, reg, BLACK, availW); // Slightly smaller font
+    checkY(lines.length * 11 + 2); // Tighter line height
+    page.drawText(label + ':', { x: bx, y: y - 9, size: 9, font: bold, color: BLACK });
     if (lines[0]) {
-      page.drawText(lines[0], { x: bx + labelW, y: y - 9.2, size: 9.2, font: reg, color: BLACK });
+      page.drawText(lines[0], { x: bx + labelW, y: y - 9, size: 9, font: reg, color: BLACK });
     }
-    y -= 11.5;
+    y -= 11; // Tighter line height
     for (let i = 1; i < lines.length; i++) {
-      checkY(11.5);
-      page.drawText(lines[i], { x: bx + labelW, y: y - 9.2, size: 9.2, font: reg, color: BLACK });
-      y -= 11.5;
+      checkY(11);
+      page.drawText(lines[i], { x: bx + labelW, y: y - 9, size: 9, font: reg, color: BLACK });
+      y -= 11;
     }
+  }
+
+  // New helper to measure job title block height
+  function measureJobTitleHeight(title, meta) {
+    let height = 0;
+    height += 2; // Initial y decrement in jobTitle
+    const tlines = drawText(title, ML, 9.2, bold, BLACK, TW);
+    height += tlines.length * 11; // Line height for title
+    const mlines = drawText(meta, ML, 8.8, ital, TW, TW);
+    height += mlines.length * 10.5; // Line height for meta
+    return height;
+  }
+
+  // New helper to measure a single bullet height
+  function measureBulletHeight(text) {
+    const bx = ML + 10;
+    const bw = TW - 10;
+    const lines = drawText(text, bx, 9, reg, BLACK, bw);
+    return lines.length * 11 + 2; // Line height for bullet + small buffer
+  }
+
+  // New helper to draw an unbreakable block of job title + bullets
+  function drawUnbreakableJobBlock(title, meta, bullets, postBlockSpacing = 0) {
+    let neededHeight = measureJobTitleHeight(title, meta);
+    for (const b of bullets) {
+      neededHeight += measureBulletHeight(b);
+    }
+    neededHeight += postBlockSpacing;
+
+    checkY(neededHeight); // Ensure the entire block fits on one page
+
+    jobTitle(title, meta);
+    for (const b of bullets) bullet(b);
+    y -= postBlockSpacing;
   }
 
   // ── NAME + CONTACT ────────────────────────────────────────────────────────
@@ -180,7 +214,7 @@ async function buildResumePDF(job, summaryText) {
   skillLine('Communication', ['Technical Report Writing','Regulatory Coordination','200+ Employee Training','Management Briefings','Cross-functional Coordination']);
 
   // ── WHY THIS ROLE ─────────────────────────────────────────────────────────
-  if (job.why) {
+  if (job.why && job.why.trim() !== '') { // Only show if why is not empty
     sectionHeader('Why This Role');
     // Convert why from 2nd person to 1st
     let whyText = (job.why||'').replace(/\byourself\b/gi,'myself').replace(/\byour\b/gi,'my').replace(/\byou\b/gi,'I')
@@ -193,8 +227,8 @@ async function buildResumePDF(job, summaryText) {
 
   // ── GP EXPERIENCE ─────────────────────────────────────────────────────────
   sectionHeader('Professional Experience');
-  jobTitle('Environmental Coordinator | Georgia-Pacific (Koch Industries)', 'Dudley, NC | June 2024 – Present');
 
+  const gpTitle = 'Environmental Coordinator | Georgia-Pacific (Koch Industries)';
   const gpBullets = [
     'Owns and operates five active regulatory programs across two manufacturing facilities — Title V air, SPCC, SWPPP, RCRA hazardous waste, and stormwater — maintaining a record of zero major violations',
     'Manages Title V air permit compliance including PCWP-MACT and BMACT standards; coordinates annual certifications, permit deviations, and all NCDEQ agency correspondence',
@@ -206,50 +240,56 @@ async function buildResumePDF(job, summaryText) {
     'Runs weekly environmental compliance training for 200+ new plant hires and works directly with plant management to identify operational value creation opportunities'
   ];
 
-  for (const b of gpBullets) bullet(b);
-  y -= 2;
+  drawUnbreakableJobBlock(gpTitle, 'Dudley, NC | June 2024 – Present', gpBullets, 2);
 
   // ── QORVO ────────────────────────────────────────────────────────────────
-  jobTitle('Mobile Engineering Intern | Qorvo', 'Greensboro, NC | May 2022 – August 2022');
-  bullet('Worked in the RF characterization lab running hardware tests on mobile chips — operated handlers, set up test routines, and logged results for the engineering team');
-  bullet('Learned Spotfire and built data visualization dashboards to help engineers track chip performance across test batches and flag outliers');
-  bullet('Got direct exposure to RF chip design, the cellular network stack, and device validation processes from early testing through production sign-off');
-  y -= 2;
+  const qorvo1Bullets = [
+    'Worked in the RF characterization lab running hardware tests on mobile chips — operated handlers, set up test routines, and logged results for the engineering team',
+    'Learned Spotfire and built data visualization dashboards to help engineers track chip performance across test batches and flag outliers',
+    'Got direct exposure to RF chip design, the cellular network stack, and device validation processes from early testing through production sign-off'
+  ];
+  drawUnbreakableJobBlock('Mobile Engineering Intern | Qorvo', 'Greensboro, NC | May 2022 – August 2022', qorvo1Bullets, 2);
 
-  jobTitle('Mobile Engineering Intern | Qorvo', 'Greensboro, NC | May 2021 – August 2021');
-  bullet('Taught myself C# in the first few weeks and built an internal data parsing application — took Excel files from multiple engineers, cleaned and reformatted them for a downstream code generator used in chip characterization');
-  bullet('The tool went into regular production use and eliminated a manual, error-prone file prep step the team had been doing by hand');
-  bullet('Scoped, built, tested, and shipped the project independently — no prior C# experience, minimal guidance, first real software deliverable');
-  y -= 2;
+  const qorvo2Bullets = [
+    'Taught myself C# in the first few weeks and built an internal data parsing application — took Excel files from multiple engineers, cleaned and reformatted them for a downstream code generator used in chip characterization',
+    'The tool went into regular production use and eliminated a manual, error-prone file prep step the team had been doing by hand',
+    'Scoped, built, tested, and shipped the project independently — no prior C# experience, minimal guidance, first real software deliverable'
+  ];
+  drawUnbreakableJobBlock('Mobile Engineering Intern | Qorvo', 'Greensboro, NC | May 2021 – August 2021', qorvo2Bullets, 2);
 
   // ── FERTIVO ──────────────────────────────────────────────────────────────
-  jobTitle('Co-Founder and CEO | Fertivo', 'Cary, NC | September 2017 – April 2018');
-  bullet('Co-founded a startup building a trash can that converted organic waste into fertilizer — developed the concept, assembled the founding team, and drove product direction from idea through prototype');
-  bullet('Led weekly team meetings, coordinated hardware prototyping and business development in parallel, and reached out to competitors to map the market landscape');
-  bullet('Planned multiple revenue streams: direct consumer sales, commercial facility partnerships, and municipal solid waste contracts');
-  y -= 2;
+  const fertivoBullets = [
+    'Co-founded a startup building a trash can that converted organic waste into fertilizer — developed the concept, assembled the founding team, and drove product direction from idea through prototype',
+    'Led weekly team meetings, coordinated hardware prototyping and business development in parallel, and reached out to competitors to map the market landscape',
+    'Planned multiple revenue streams: direct consumer sales, commercial facility partnerships, and municipal solid waste contracts'
+  ];
+  drawUnbreakableJobBlock('Co-Founder and CEO | Fertivo', 'Cary, NC | September 2017 – April 2018', fertivoBullets, 2);
 
   // ── LYFEWARE ─────────────────────────────────────────────────────────────
   sectionHeader('Personal Projects');
-  jobTitle('LyfeWare — Integrated Lifestyle Ecosystem', 'Solo Build | 2024 – Present');
-  bullet('Engineered and deployed a centralized "Sign in with LyfeWare" SSO authentication portal for a multi-app ecosystem (Pantry, HomeBase, Vinyl), leveraging React, Vite, and Supabase Auth with Google and Apple OAuth for seamless cross-platform session persistence and data portability.');
-  bullet('Engineered a cross-app real-time signal bus using PostgreSQL triggers and Supabase Realtime — e.g., automatically triggering high-BPM playlists in Vinyl when a deep-clean chore is started in HomeBase');
-  bullet('Designed a unified multi-tenant Supabase schema with Row Level Security policies handling shared household data across grocery lists, expenses, and analytics');
-  bullet('Orchestrated a CI/CD pipeline with TypeScript for end-to-end type safety, Netlify for web hosting, and Expo for cross-platform mobile deployment');
-  y -= 2;
+  const lyfeWareBullets = [
+    'Engineered and deployed a centralized "Sign in with LyfeWare" SSO authentication portal for a multi-app ecosystem (Pantry, HomeBase, Vinyl), leveraging React, Vite, and Supabase Auth with Google and Apple OAuth for seamless cross-platform session persistence and data portability.',
+    'Engineered a cross-app real-time signal bus using PostgreSQL triggers and Supabase Realtime — e.g., automatically triggering high-BPM playlists in Vinyl when a deep-clean chore is started in HomeBase',
+    'Designed a unified multi-tenant Supabase schema with Row Level Security policies handling shared household data across grocery lists, expenses, and analytics',
+    'Orchestrated a CI/CD pipeline with TypeScript for end-to-end type safety, Netlify for web hosting, and Expo for cross-platform mobile deployment'
+  ];
+  drawUnbreakableJobBlock('LyfeWare — Integrated Lifestyle Ecosystem', 'Solo Build | 2024 – Present', lyfeWareBullets, 2);
 
   // ── EDUCATION ────────────────────────────────────────────────────────────
-  checkY(90);
+  checkY(90); // Ensure enough space for the entire education section header + first entry
   sectionHeader('Education');
-  jobTitle('B.S. Environmental Science | North Carolina State University', 'Raleigh, NC | Graduated August 2024');
-  bullet('Minor in Economics');
 
-  jobTitle('Capstone Project: Natural Resource Management', 'Raleigh, NC | January 2024 – May 2024');
-  bullet('Built Natural Resources Management Plans to solve issues, such as forest fire prevention, optimal land-use allocation, and watershed management strategies');
-  bullet('Collaborated with a team to analyze how Hofmann Forest in NC can be better managed in a both more environmentally sustainable as well as more profitable way');
-  bullet('Completed a "Business as Usual" assessment of various environments, such as watersheds, forests, and farmland, to establish baseline impact metrics');
-  bullet('Performed two comprehensive case studies (one independent and one with a group) on how respective environmental issues can be addressed');
-  bullet('Utilized advanced Excel modeling to generate numerous reports, including sustainability reports, economic analysis, and data-driven assessments');
+  const bsBullets = ['Minor in Economics'];
+  drawUnbreakableJobBlock('B.S. Environmental Science | North Carolina State University', 'Raleigh, NC | Graduated August 2024', bsBullets);
+
+  const capstoneBullets = [
+    'Built Natural Resources Management Plans to solve issues, such as forest fire prevention, optimal land-use allocation, and watershed management strategies',
+    'Collaborated with a team to analyze how Hofmann Forest in NC can be better managed in a both more environmentally sustainable as well as more profitable way',
+    'Completed a "Business as Usual" assessment of various environments, such as watersheds, forests, and farmland, to establish baseline impact metrics',
+    'Performed two comprehensive case studies (one independent and one with a group) on how respective environmental issues can be addressed',
+    'Utilized advanced Excel modeling to generate numerous reports, including sustainability reports, economic analysis, and data-driven assessments'
+  ];
+  drawUnbreakableJobBlock('Capstone Project: Natural Resource Management', 'Raleigh, NC | January 2024 – May 2024', capstoneBullets);
 
   // ── ATS KEYWORDS ─────────────────────────────────────────────────────────
   if (allKeywords.length > 0) {
