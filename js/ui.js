@@ -81,8 +81,8 @@ window.parseBulkUrls = async () => {
       if(!m) throw new Error('No JSON');
       const job  = JSON.parse(m[0]);
       if(!job.title||!job.company) throw new Error('Missing fields');
-      const newId = Math.max(...ALL_JOBS.map(j=>j.id))+1;
-      const newJob = {id:newId,batch:Math.max(...ALL_JOBS.map(j=>j.batch||1))+1,
+      const newId = Math.max(...window.ALL_JOBS.map(j=>j.id))+1;
+      const newJob = {id:newId,batch:Math.max(...window.ALL_JOBS.map(j=>j.batch||1))+1,
         title:job.title,company:job.company,companySize:job.companySize||'',
         type:job.type||'Unknown',pay:job.pay||'Not listed',payNum:job.payNum||85000,
         url:job.url||url,fit:Math.min(99,Math.max(1,parseInt(job.fit)||75)),
@@ -92,8 +92,8 @@ window.parseBulkUrls = async () => {
         badgeColor:job.badgeColor||'#0891b2',
         recruiter:{name:null,linkedin_search:`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent((job.company||'').split('(')[0].trim())}+recruiter`,note:'Newly added.'},
         status:'Not Applied'};
-      ALL_JOBS.push(newJob);
-      RESUMES[String(newId)] = null;
+      window.ALL_JOBS.push(newJob);
+      window.RESUMES[String(newId)] = null;
       const dots = prog.querySelectorAll('.step-dot.pend');
       if(dots.length) dots[dots.length-1].className='step-dot done';
       prog.innerHTML += `&nbsp;&nbsp;→ Added: ${job.title} @ ${job.company}<br>`;
@@ -312,7 +312,8 @@ window.render = function(){
     .map(([k,l])=>`<button class="tab-btn${window.activeTab===k?' active':''}" onclick="setTab('${k}')">${l}</button>`).join('');
 
   // Filter + sort
-  let vis=window.ALL_JOBS.filter(j=>{
+  let vis=(window.ALL_JOBS || []).filter(j=>{
+    if(!j || !window.filters) return false;
     if(window.filters.batch!=='all'&&j.batch!==parseInt(window.filters.batch))return false;
     if(window.filters.status!=='all'&&(window.statuses[j.id]||'Not Applied')!==window.filters.status)return false;
     if(window.filters.flag==='flagged'&&!window.flags[j.id])return false;
