@@ -175,7 +175,7 @@ Fetch the URL content first using web search if needed, then extract the data.`,
         max_tokens: 2000,
         system: `You write resume summaries and identify which experience bullets to highlight for job applications.
 
-The candidate is Omkar Apte. Write the summary in a professional, first-person objective style (e.g. "Environmental professional with..."). Do NOT use "you", "your", or conversational filler. Focus on qualifications.
+The candidate is Omkar Apte. Write the summary in a professional, first-person objective style. Lead with: "Imaginative, inquisitive, driven, creative, and highly competent environmental and data professional." Focus entirely on how the candidate's specific background in Title V, SPCC, and Power BI solves the problems of the specific hiring company. Do NOT use meta-commentary like "this is a good fit" or "on the list".
 - Environmental Coordinator at Georgia-Pacific (Koch Industries), Dudley NC, June 2024-Present
 - Owns Title V air, SPCC, SWPPP, RCRA hazardous waste, stormwater, water quality programs
 - Built Power BI compliance dashboard (600+ users), automated 80% of manual tasks with Python/Power Automate

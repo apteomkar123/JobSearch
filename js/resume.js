@@ -4,10 +4,9 @@ async function buildResumePDF(job, summaryText) {
   const { PDFDocument, rgb, StandardFonts } = PDFLib;
 
   const doc  = await PDFDocument.create();
-  // StandardFonts property names vary by version; fallbacks ensure compatibility
-  const bold = await doc.embedFont(StandardFonts.TimesRomanBold || StandardFonts.TimesBold || 'Times-Bold');
-  const reg  = await doc.embedFont(StandardFonts.TimesRoman || 'Times-Roman');
-  const ital = await doc.embedFont(StandardFonts.TimesRomanItalic || StandardFonts.TimesItalic || 'Times-Italic');
+  const bold = await doc.embedFont(StandardFonts.TimesBold);
+  const reg  = await doc.embedFont(StandardFonts.TimesRoman);
+  const ital = await doc.embedFont(StandardFonts.TimesItalic);
 
   const PAGE_W = 612, PAGE_H = 792;
   const ML = 54, MR = 54, MT = 44, MB = 44;
@@ -177,6 +176,12 @@ async function buildResumePDF(job, summaryText) {
   if (!isEHS && !isData && !isGIS && !isAI && !isImpl) {
     skillLine('Technical', ['Python','Power BI','GIS / ArcGIS','Power Automate','GitHub Copilot','Excel','R','SQL']);
   }
+
+  // Mandatory universal skill blocks
+  skillLine('Academic', ['Proficient in Math and Science', 'Great writer and communicator', 'High business and economic sense', 'Creative problem solving', 'Soil Science', 'Sustainability and Climate Change', 'Natural Resource Management', 'Organic Chemistry', 'Energy and the Environment', 'Circuits', 'Computer Logic', 'C Programming']);
+  skillLine('Technical', ['HTML', 'CSS', 'JavaScript', 'Microsoft Office', 'Photoshop', 'Python', 'R', 'C#', 'C', 'GIS', 'Microsoft Power Tools', 'AI Agents', 'Github Copilot']);
+  skillLine('Personal', ['Problem solving', 'Strong work ethic', 'Creative', 'Positive', 'Team-oriented', 'Quick learner', 'Sociable', 'Strong communication', 'Innovative', 'Organized', 'Analytical']);
+
   skillLine('Communication', ['Technical Report Writing','Regulatory Coordination','200+ Employee Training','Management Briefings','Cross-functional Coordination']);
   y -= 3;
 
@@ -185,7 +190,9 @@ async function buildResumePDF(job, summaryText) {
     sectionHeader('Why This Role');
     // Convert why from 2nd person to 1st
     let whyText = (job.why||'').replace(/\byourself\b/gi,'myself').replace(/\byour\b/gi,'my').replace(/\byou\b/gi,'I')
-      .replace(/\byou've\b/gi,"I've").replace(/\byou're\b/gi,"I'm").replace(/\byours\b/gi,'mine');
+      .replace(/\byou've\b/gi,"I've").replace(/\byou're\b/gi,"I'm").replace(/\byours\b/gi,'mine')
+      .replace(/\bon the list\.?/gi, '').replace(/\bon the board\.?/gi, '')
+      .replace(/\bthis is the\b.* applicable job/gi, '').trim();
     const whySentences = whyText.split('.').filter(s=>s.trim()).slice(0,2);
     bodyText(whySentences.join('. ').trim() + '.');
     y -= 3;
@@ -232,7 +239,7 @@ async function buildResumePDF(job, summaryText) {
   // ── LYFEWARE ─────────────────────────────────────────────────────────────
   sectionHeader('Personal Projects');
   jobTitle('LyfeWare — Integrated Lifestyle Ecosystem', 'Solo Build | 2024 – Present');
-  bullet('Architected and deployed a multi-app suite (Pantry, HomeBase, Vinyl) unified by a custom "Sign in with LyfeWare" SSO identity provider built on React, Vite, and Supabase Auth with Google and Apple OAuth');
+  bullet('Engineered and deployed a centralized "Sign in with LyfeWare" SSO authentication portal for a multi-app ecosystem (Pantry, HomeBase, Vinyl), leveraging React, Vite, and Supabase Auth with Google and Apple OAuth for seamless cross-platform session persistence and data portability.');
   bullet('Engineered a cross-app real-time signal bus using PostgreSQL triggers and Supabase Realtime — e.g., automatically triggering high-BPM playlists in Vinyl when a deep-clean chore is started in HomeBase');
   bullet('Designed a unified multi-tenant Supabase schema with Row Level Security policies handling shared household data across grocery lists, expenses, and analytics');
   bullet('Orchestrated a CI/CD pipeline with TypeScript for end-to-end type safety, Netlify for web hosting, and Expo for cross-platform mobile deployment');
@@ -241,10 +248,15 @@ async function buildResumePDF(job, summaryText) {
   // ── EDUCATION ────────────────────────────────────────────────────────────
   checkY(90);
   sectionHeader('Education');
-  jobTitle('B.S. Environmental Science | North Carolina State University', 'Raleigh, NC | August 2024');
+  jobTitle('B.S. Environmental Science | North Carolina State University', 'Raleigh, NC | Graduated August 2024');
   bullet('Minor in Economics');
-  bullet('Relevant coursework: Soil Science, Natural Resource Management, Sustainability and Climate Change, Energy and Environment, Capstone (NRM Planning)');
-  bullet('Additional coursework: Electrical Engineering — Circuits, Computer Logic, C Programming');
+
+  jobTitle('Capstone Project: Natural Resource Management', 'January 2024 – May 2024');
+  bullet('Built Natural Resources Management Plans to solve issues, such as forest fire prevention, optimal land-use allocation, and watershed management strategies');
+  bullet('Collaborated with a multi-disciplinary team to analyze Hofmann Forest (NC), identifying management paths to increase both environmental sustainability and profitability');
+  bullet('Completed a "Business as Usual" assessment across various ecosystems, including watersheds, forests, and farmland, to establish baseline impact metrics');
+  bullet('Performed two comprehensive case studies (independent and group-based) on addressing specific ecological and regulatory challenges');
+  bullet('Utilized advanced Excel modeling to generate numerous sustainability reports, economic feasibility analyses, and data-driven environmental assessments');
 
   // ── ATS KEYWORDS ─────────────────────────────────────────────────────────
   if (allKeywords.length > 0) {
