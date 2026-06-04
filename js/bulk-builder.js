@@ -15,11 +15,9 @@ async function runBulkResumeGeneration() {
     console.log(`📦 Processing Chunk ${chunkIndex} (${i} to ${Math.min(i + CHUNK_SIZE, total)})...`);
 
     for (const job of chunk) {
-      // Use the specific 'why' field to create a uniquely tailored ATS-friendly summary
-      // If 'why' is missing, use the Master Document Fallback
-      const summary = job.why 
-        ? `Environmental professional with expertise in ${job.tags.slice(0,4).join(', ')}. ${job.why.split('.').slice(0,2).join('.')}. B.S. Environmental Science, NC State.`
-        : `Environmental compliance professional with two years owning Title V, SPCC, SWPPP, RCRA, and stormwater programs at two manufacturing facilities, with zero major violations. Builds production-grade data tools (Power BI, Python, AI agents). B.S. Environmental Science, NC State.`;
+      // objective first-person summary template (ATS Optimized)
+      const summary = `Environmental and data professional with a B.S. from NC State and 2 years at Georgia-Pacific (Koch Industries) owning complex regulatory programs including Title V, SPCC, and RCRA. Proven track record building enterprise Power BI solutions and Python automation to optimize compliance. Expert in ${job.tags.slice(0,3).join(', ')} for ${job.company}.`;
+      
       const result = await buildAndStoreResume(job, summary);
       if (result) {
         // The buildAndStoreResume function puts data into the global RESUMES object

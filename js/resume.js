@@ -4,9 +4,9 @@ async function buildResumePDF(job, summaryText) {
   const { PDFDocument, rgb, StandardFonts } = PDFLib;
 
   const doc  = await PDFDocument.create();
-  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
-  const reg  = await doc.embedFont(StandardFonts.Helvetica);
-  const ital = await doc.embedFont(StandardFonts.HelveticaOblique);
+  const bold = await doc.embedFont(StandardFonts.TimesBold);
+  const reg  = await doc.embedFont(StandardFonts.TimesRoman);
+  const ital = await doc.embedFont(StandardFonts.TimesItalic);
 
   const PAGE_W = 612, PAGE_H = 792;
   const ML = 54, MR = 54, MT = 44, MB = 44;
@@ -194,31 +194,17 @@ async function buildResumePDF(job, summaryText) {
   sectionHeader('Professional Experience');
   jobTitle('Environmental Coordinator | Georgia-Pacific (Koch Industries)', 'Dudley, NC | June 2024 – Present');
 
-  const gpBullets = [];
-  if (isEHS || isImpl) {
-    gpBullets.push('Owns five active regulatory programs across two plywood and lumber facilities — Title V air, SPCC, SWPPP, RCRA hazardous waste, and stormwater — with no major violations under any of them');
-    gpBullets.push('Manages Title V air permit compliance including PCWP-MACT and BMACT standards; coordinates permit deviations, compliance certifications, and NCDEQ correspondence');
-    gpBullets.push('Runs monthly water quality sampling under NCMA certification; maintains SWPPP documentation and stormwater BMP inspections for both facilities');
-    gpBullets.push('Conducts regular compliance audits across SPCC, stormwater, hazardous waste, and air programs; manages corrective actions through to closure');
-  }
-  if (isData || isAI || isImpl) {
-    gpBullets.push('Built a Power BI compliance analytics dashboard from scratch — used across two facilities by 600+ employees to track KPIs, inspection status, and corrective actions in real time');
-    gpBullets.push('Automated roughly 80% of manual department reporting using Python and Power Automate, saving the team about 30% of monthly working hours');
-  }
-  if (isAI) {
-    gpBullets.push('Deployed AI agents for regulatory research — cuts permit condition lookup time from hours to minutes and runs in a live production environment');
-    gpBullets.push('Uses GitHub Copilot to build and maintain in-house automation tools in production, without external IT support');
-  }
-  if (isImpl) {
-    gpBullets.push("Led the rollout of the company's in-house inspection application — assisted with development and testing, produced training materials, and trained 100+ environmental managers nationally");
-  }
-  // defaults if nothing matched
-  if (!gpBullets.length) {
-    gpBullets.push('Owns Title V air, SPCC, SWPPP, RCRA hazardous waste, stormwater, and water quality programs across two manufacturing facilities — no major violations');
-    gpBullets.push('Built Power BI compliance dashboard (600+ users), automated 80% of manual tasks with Python and Power Automate');
-    gpBullets.push('Deployed AI agents for regulatory research; led nationwide inspection app rollout and trained 100+ managers');
-  }
-  gpBullets.push('Runs weekly environmental compliance training for new plant hires and works directly with plant management on facility operations');
+  const gpBullets = [
+    'Owns and operates five active regulatory programs across two manufacturing facilities — Title V air, SPCC, SWPPP, RCRA hazardous waste, and stormwater — maintaining a record of zero major violations',
+    'Manages Title V air permit compliance including PCWP-MACT and BMACT standards; coordinates annual certifications, permit deviations, and all NCDEQ agency correspondence',
+    'Directs monthly water quality sampling under NCMA certification and conducts regular compliance audits to manage facility-wide corrective actions through to closure',
+    'Engineered a custom Power BI compliance analytics platform from scratch, utilized by 600+ employees to track real-time KPIs, inspection status, and corrective actions across sites',
+    'Automated roughly 80% of manual department reporting workflows using Python and Power Automate, resulting in a 30% reduction in monthly team working hours',
+    'Deployed AI agents for regulatory research in a live production environment, cutting technical documentation lookup time from hours to minutes',
+    'Led the nationwide rollout and training for an in-house digital inspection application for over 100 environmental managers across Georgia-Pacific operations',
+    'Runs weekly environmental compliance training for 200+ new plant hires and works directly with plant management on facility operations'
+  ];
+
   for (const b of gpBullets) bullet(b);
   y -= 4;
 
