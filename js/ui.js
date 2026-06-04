@@ -1,22 +1,22 @@
 // ── PUBLIC API ───────────────────────────────────────────────────────────────────
-window.setStatus=(id,s)=>{statuses[id]=s;scheduleSave();render();updateStats();};
-window.setFlag=(id,v)=>{flags[id]=v;scheduleSave();render();updateStats();};
-window.setCL=(id,v)=>{coverLetters[id]=v;scheduleSave();render();};
+window.setStatus=(id,s)=>{window.statuses[id]=s;window.scheduleSave();window.render();window.updateStats();};
+window.setFlag=(id,v)=>{window.flags[id]=v;window.scheduleSave();window.render();window.updateStats();};
+window.setCL=(id,v)=>{window.coverLetters[id]=v;window.scheduleSave();window.render();};
 window.toggleExpand=id=>{
-  expanded=(expanded===id)?null:id;
-  render();
-  if(expanded){
+  window.expanded=(window.expanded===id)?null:id;
+  window.render();
+  if(window.expanded){
     requestAnimationFrame(()=>{
       const el=document.querySelector('.job-card.expanded');
       if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});
     });
   }
 };
-window.setTab=t=>{activeTab=t;render();};
+window.setTab=t=>{window.activeTab=t;window.render();};
 window.setFilter=(k,v,btn)=>{
-  filters[k]=v;
+  window.filters[k]=v;
   btn.parentElement.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');render();
+  btn.classList.add('active');window.render();
 };
 window.testFunction = async () => {
   const prog = document.getElementById('jobProgress');
@@ -116,9 +116,9 @@ window.parseBulkUrls = async () => {
     if(i<urls.length-1) await new Promise(r=>setTimeout(r,1200));
   }
 
-  updateStats(); render();
+  window.updateStats(); window.render();
   const ns=document.querySelector('.nav-sub');
-  if(ns) ns.textContent=`Tech × Environment · ${ALL_JOBS.length} opportunities tracked`;
+  if(ns) ns.textContent=`Tech × Environment · ${window.ALL_JOBS.length} opportunities tracked`;
   prog.innerHTML += `<br><b>${added} added${failed?`, ${failed} failed`:''}.</b>`;
   btn.disabled=false; btn.textContent='Parse More';
   toast(`Added ${added} jobs${failed?`, ${failed} failed`:''}`);
@@ -128,17 +128,17 @@ window.toggleRecent=(btn)=>{
   const active = btn.classList.toggle('active');
   if(active){
     // Show 10 most recently added (highest IDs)
-    const sorted=[...ALL_JOBS].sort((a,b)=>b.id-a.id).slice(0,10);
+    const sorted=[...window.ALL_JOBS].sort((a,b)=>b.id-a.id).slice(0,10);
     const cards=document.getElementById('cards'); if(!cards)return;
     const s=j=>SRC[j.source]||SRC.direct;
     cards.innerHTML=sorted.map(job=>{
-      const st=statuses[job.id]||'Not Applied';
-      const fl=!!flags[job.id];
-      const cl=coverLetters[job.id]||'none';
-      const ex=expanded===job.id;
-      const hr=!!(RESUMES[String(job.id)]&&RESUMES[String(job.id)]!==null);
+      const st=window.statuses[job.id]||'Not Applied';
+      const fl=!!window.flags[job.id];
+      const cl=window.coverLetters[job.id]||'none';
+      const ex=window.expanded===job.id;
+      const hr=!!(window.RESUMES[String(job.id)]&&window.RESUMES[String(job.id)]!==null);
       const src=s(job);
-      const bodyContent=activeTab==='why'?(job.why||''):activeTab==='resume'?(job.resume_angle||''):
+      const bodyContent=window.activeTab==='why'?(job.why||''):window.activeTab==='resume'?(job.resume_angle||''):
         `<span class="body-section-label">Benefits</span>${job.benefits||''}<span class="body-section-label" style="margin-top:10px">Bonus</span><span style="color:var(--green)">${job.bonus||''}</span>`;
       return `<div class="job-card${ex?' expanded':''}" id="card-${job.id}">
         <div class="card-header" onclick="toggleExpand(${job.id})">
@@ -169,8 +169,8 @@ window.toggleRecent=(btn)=>{
               ${STATUSES.map(ss=>`<button class="status-chip${st===ss?' active':''}" style="--chip-color:${SC[ss]}" onclick="setStatus(${job.id},'${ss}')">${ss}</button>`).join('')}
             </div>
             ${hr
-              ? `<button onclick="downloadResume(${job.id})" class="btn btn-dl">⬇ Download Resume</button>`
-              : !resumesLoaded
+              ? `<button onclick="window.downloadResume(${job.id})" class="btn btn-dl">⬇ Download Resume</button>`
+              : !window.resumesLoaded
                 ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">⟳ Resumes loading...</span>`
                 : window.resumeLoadError 
                   ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--red)">⚠ ${window.resumeLoadError}</span>` 
@@ -191,17 +191,17 @@ window.toggleRecent=(btn)=>{
   } else {
     const lbl=document.getElementById('recent-label');
     if(lbl) lbl.remove();
-    render();
+    window.render();
   }
 };
 
 window.setSort=(k,btn)=>{
-  sortBy=k;
+  window.sortBy=k;
   btn.parentElement.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');render();
+  btn.classList.add('active');window.render();
 };
 window.downloadResume=id=>{
-  const r=RESUMES[String(id)];
+  const r=window.RESUMES[String(id)];
   if(!r){toast('Resume loading — try again in a moment');return;}
   try{
     const bytes=atob(r.b64);
@@ -271,10 +271,10 @@ const SC={'Not Applied':'#4a5a78','Applied':'#4d9fff','Interview':'#a78bfa','Off
 const SRC={indeed:{label:'Indeed',color:'#4d9fff'},linkedin:{label:'LinkedIn',color:'#4d9fff'},direct:{label:'Direct',color:'#a78bfa'}};
 
 // ── UPDATE STATS ─────────────────────────────────────────────────────────────────
-function updateStats(){
-  const app=Object.values(statuses).filter(s=>s!=='Not Applied').length;
-  const itr=Object.values(statuses).filter(s=>['Interview','Offer'].includes(s)).length;
-  const fl=Object.values(flags).filter(Boolean).length;
+window.updateStats = function(){
+  const app=Object.values(window.statuses).filter(s=>s!=='Not Applied').length;
+  const itr=Object.values(window.statuses).filter(s=>['Interview','Offer'].includes(s)).length;
+  const fl=Object.values(window.flags).filter(Boolean).length;
   const animNum=(el,val)=>{
     const start=parseInt(el.textContent)||0, end=val, dur=600;
     const t0=performance.now();
@@ -285,20 +285,20 @@ function updateStats(){
     };
     requestAnimationFrame(step);
   };
-  animNum(document.getElementById('s-total'),ALL_JOBS.length);
+  animNum(document.getElementById('s-total'),window.ALL_JOBS.length);
   animNum(document.getElementById('s-applied'),app);
   animNum(document.getElementById('s-interviews'),itr);
   animNum(document.getElementById('s-flagged'),fl);
-  const unapplied=ALL_JOBS.filter(j=>(statuses[j.id]||'Not Applied')==='Not Applied').length;
+  const unapplied=window.ALL_JOBS.filter(j=>(window.statuses[j.id]||'Not Applied')==='Not Applied').length;
   animNum(document.getElementById('s-unapplied'),unapplied);
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────────
-function render(){
+window.render = function(){
   // Round filter buttons (build once)
   const rfb=document.getElementById('round-filter');
   if(rfb&&rfb.querySelectorAll('.fbtn').length<=1){
-    [...new Set(ALL_JOBS.map(j=>j.batch))].sort((a,b)=>a-b).forEach(b=>{
+    [...new Set(window.ALL_JOBS.map(j=>j.batch))].sort((a,b)=>a-b).forEach(b=>{
       const btn=document.createElement('button');
       btn.className='fbtn'; btn.textContent='R'+b;
       btn.onclick=function(){setFilter('batch',String(b),this);};
@@ -309,31 +309,31 @@ function render(){
   // Tabs
   const tb=document.getElementById('tab-bar');
   if(tb)tb.innerHTML=[['why','Why You Fit'],['resume','Resume Angle'],['benefits','Benefits']]
-    .map(([k,l])=>`<button class="tab-btn${activeTab===k?' active':''}" onclick="setTab('${k}')">${l}</button>`).join('');
+    .map(([k,l])=>`<button class="tab-btn${window.activeTab===k?' active':''}" onclick="setTab('${k}')">${l}</button>`).join('');
 
   // Filter + sort
-  let vis=ALL_JOBS.filter(j=>{
-    if(filters.batch!=='all'&&j.batch!==parseInt(filters.batch))return false;
-    if(filters.status!=='all'&&(statuses[j.id]||'Not Applied')!==filters.status)return false;
-    if(filters.flag==='flagged'&&!flags[j.id])return false;
-    if(filters.cl==='needed'&&coverLetters[j.id]!=='needed')return false;
-    if(filters.cl==='done'&&coverLetters[j.id]!=='done')return false;
+  let vis=window.ALL_JOBS.filter(j=>{
+    if(window.filters.batch!=='all'&&j.batch!==parseInt(window.filters.batch))return false;
+    if(window.filters.status!=='all'&&(window.statuses[j.id]||'Not Applied')!==window.filters.status)return false;
+    if(window.filters.flag==='flagged'&&!window.flags[j.id])return false;
+    if(window.filters.cl==='needed'&&window.coverLetters[j.id]!=='needed')return false;
+    if(window.filters.cl==='done'&&window.coverLetters[j.id]!=='done')return false;
     return true;
   });
-  if(sortBy==='fit')vis.sort((a,b)=>b.fit-a.fit);
+  if(window.sortBy==='fit')vis.sort((a,b)=>b.fit-a.fit);
   else vis.sort((a,b)=>b.id-a.id);
 
   const cards=document.getElementById('cards'); if(!cards)return;
   const s=j=>SRC[j.source]||SRC.direct;
 
   cards.innerHTML=vis.map(job=>{
-    const st=statuses[job.id]||'Not Applied';
-    const fl=!!flags[job.id];
-    const cl=coverLetters[job.id]||'none';
-    const ex=expanded===job.id;
-    const hr=!!RESUMES[String(job.id)];
+    const st=window.statuses[job.id]||'Not Applied';
+    const fl=!!window.flags[job.id];
+    const cl=window.coverLetters[job.id]||'none';
+    const ex=window.expanded===job.id;
+    const hr=!!window.RESUMES[String(job.id)];
     const src=s(job);
-    const bodyContent=activeTab==='why'?(job.why||''):activeTab==='resume'?(job.resume_angle||''):
+    const bodyContent=window.activeTab==='why'?(job.why||''):window.activeTab==='resume'?(job.resume_angle||''):
       `<span class="body-section-label">Benefits</span>${job.benefits||''}<span class="body-section-label" style="margin-top:10px">Bonus</span><span style="color:var(--green)">${job.bonus||''}</span>`;
 
     return `<div class="job-card${ex?' expanded':''}" id="card-${job.id}">
@@ -370,8 +370,8 @@ function render(){
             ${STATUSES.map(ss=>`<button class="status-chip${st===ss?' active':''}" style="--chip-color:${SC[ss]}" onclick="setStatus(${job.id},'${ss}')">${ss}</button>`).join('')}
           </div>
           ${hr
-            ?`<button onclick="downloadResume(${job.id})" class="btn btn-dl">⬇ Download Resume</button>`
-            :!resumesLoaded
+            ?`<button onclick="window.downloadResume(${job.id})" class="btn btn-dl">⬇ Download Resume</button>`
+            :!window.resumesLoaded
               ?`<span style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">⟳ Resumes loading...</span>`
               :window.resumeLoadError
                 ?`<span style="font-family:var(--font-mono);font-size:10px;color:var(--red)">⚠ ${window.resumeLoadError}</span>`

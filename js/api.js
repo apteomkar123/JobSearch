@@ -133,8 +133,8 @@ Fetch the URL content first using web search if needed, then extract the data.`,
 
     // ── STEP 2: Assign ID and defaults ─────────────────────────────────────
     step('Processing job data...');
-    const newId = Math.max(...ALL_JOBS.map(j => j.id)) + 1;
-    const batch = Math.max(...ALL_JOBS.map(j => j.batch || 1)) + 1;
+    const newId = Math.max(...window.ALL_JOBS.map(j => j.id)) + 1;
+    const batch = Math.max(...window.ALL_JOBS.map(j => j.batch || 1)) + 1;
 
     const newJob = {
       id: newId,
@@ -223,15 +223,13 @@ Return ONLY a JSON object (no markdown):
 
     // ── STEP 4: Add job to ALL_JOBS and dashboard ───────────────────────────
     step('Adding to dashboard...');
-    ALL_JOBS.push(newJob);
+    window.ALL_JOBS.push(newJob);
 
-    // Add a placeholder resume entry (no PDF — show "Resume building..." for now)
-    // We'll store the metadata so it shows up
-    RESUMES[String(newJob.id)] = null;  // null = building
+    window.RESUMES[String(newJob.id)] = null;  // null = building
 
     // Update nav subtitle
     const navSub = document.querySelector('.nav-sub');
-    if(navSub) navSub.textContent = `Tech × Environment · ${ALL_JOBS.length} opportunities tracked`;
+    if(navSub) navSub.textContent = `Tech × Environment · ${window.ALL_JOBS.length} opportunities tracked`;
 
     // Update unapplied count
     updateStats();
@@ -277,4 +275,3 @@ Return ONLY a JSON object (no markdown):
     btn.textContent = 'Try Again';
   }
 };
-

@@ -1,8 +1,8 @@
 import { RESUME_BASE_URL } from './config.js';
 
 // ── DATA ────────────────────────────────────────────────────────────────────────
-let RESUMES = {};
-let resumesLoaded = false;
+window.RESUMES = {};
+window.resumesLoaded = false;
 window.resumeLoadError = null; 
 
 // Load resume chunks in parallel for faster download
@@ -25,17 +25,17 @@ window.resumeLoadError = null;
         })
       )
     );
-    results.forEach(chunk=>Object.assign(RESUMES,chunk));
+    results.forEach(chunk=>Object.assign(window.RESUMES,chunk));
   } catch(e) {
     console.error('Critical failure in resume loader:', e);
     window.resumeLoadError = e.message;
   }
-  resumesLoaded = true;
-  render();
+  window.resumesLoaded = true;
+  if(window.render) window.render();
 })();
 
 // ── STATE ────────────────────────────────────────────────────────────────────────
-let statuses={}, flags={}, coverLetters={};
-let expanded=null, activeTab='why', sortBy='fit';
-let filters={batch:'all',status:'all',flag:'all',cl:'all'};
-let saveTimer=null, sbReady=false;
+window.statuses={}; window.flags={}; window.coverLetters={};
+window.expanded=null; window.activeTab='why'; window.sortBy='fit';
+window.filters={batch:'all',status:'all',flag:'all',cl:'all'};
+window.saveTimer=null; window.sbReady=false;

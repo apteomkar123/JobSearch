@@ -10,36 +10,36 @@ async function sbLoad(){
     const rows=await r.json();
     if(rows.length>0){
       const row=rows[0];
-      try{statuses=JSON.parse(row.statuses||'{}');}catch(e){}
-      try{flags=JSON.parse(row.flags||'{}');}catch(e){}
-      try{coverLetters=JSON.parse(row.cover_letters||'{}');}catch(e){}
+      try{window.statuses=JSON.parse(row.statuses||'{}');}catch(e){}
+      try{window.flags=JSON.parse(row.flags||'{}');}catch(e){}
+      try{window.coverLetters=JSON.parse(row.cover_letters||'{}');}catch(e){}
     }
-    sbReady=true; setSS('ok','Synced'); render(); updateStats();
+    window.sbReady=true; setSS('ok','Synced'); window.render(); window.updateStats();
   }catch(e){
-    lsLoad(); setSS('err','Offline'); render(); updateStats();
+    lsLoad(); setSS('err','Offline'); window.render(); window.updateStats();
   }
 }
 async function sbSave(){
   lsSave();
-  if(!sbReady)return;
+  if(!window.sbReady)return;
   try{
     setSS('pend','Saving');
     const res=await fetch(SB_URL+'/rest/v1/job_statuses',{
       method:'POST',headers:SB_WRITE,
-      body:JSON.stringify({id:ROW_ID,statuses:JSON.stringify(statuses),flags:JSON.stringify(flags),cover_letters:JSON.stringify(coverLetters)})
+      body:JSON.stringify({id:ROW_ID,statuses:JSON.stringify(window.statuses),flags:JSON.stringify(window.flags),cover_letters:JSON.stringify(window.coverLetters)})
     });
     if(!res.ok)throw new Error(await res.text());
     setSS('ok','Saved');
   }catch(e){ setSS('err','Save err'); }
 }
 function lsSave(){
-  localStorage.setItem('oa_s',JSON.stringify(statuses));
-  localStorage.setItem('oa_f',JSON.stringify(flags));
-  localStorage.setItem('oa_c',JSON.stringify(coverLetters));
+  localStorage.setItem('oa_s',JSON.stringify(window.statuses));
+  localStorage.setItem('oa_f',JSON.stringify(window.flags));
+  localStorage.setItem('oa_c',JSON.stringify(window.coverLetters));
 }
 function lsLoad(){
-  try{statuses=JSON.parse(localStorage.getItem('oa_s')||'{}');}catch(e){}
-  try{flags=JSON.parse(localStorage.getItem('oa_f')||'{}');}catch(e){}
-  try{coverLetters=JSON.parse(localStorage.getItem('oa_c')||'{}');}catch(e){}
+  try{window.statuses=JSON.parse(localStorage.getItem('oa_s')||'{}');}catch(e){}
+  try{window.flags=JSON.parse(localStorage.getItem('oa_f')||'{}');}catch(e){}
+  try{window.coverLetters=JSON.parse(localStorage.getItem('oa_c')||'{}');}catch(e){}
 }
-function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(sbSave,600);}
+function scheduleSave(){clearTimeout(window.saveTimer);window.saveTimer=setTimeout(sbSave,600);}

@@ -6,3 +6,12 @@ export const SB_READ  = { 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY, 'Ac
 export const SB_WRITE = { 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY, 'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates' };
 
 export const RESUME_BASE_URL = 'https://zbzuoovbqhlywzbamlhk.supabase.co/storage/v1/object/public/resumes/';
+
+// ── GLOBAL ATTACHMENTS ────────────────────────────────────────────────────────
+// Ensures these are visible to non-module scripts like persistence.js and api.js
+window.SB_URL = SB_URL;
+window.SB_KEY = SB_KEY;
+window.ROW_ID = ROW_ID;
+window.SB_READ = SB_READ;
+window.SB_WRITE = SB_WRITE;
+window.RESUME_BASE_URL = RESUME_BASE_URL;

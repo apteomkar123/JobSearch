@@ -1,4 +1,4 @@
-const ALL_JOBS = [
+window.ALL_JOBS = [
   {
     "id": 1,
     "batch": 1,
