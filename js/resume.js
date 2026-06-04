@@ -4,9 +4,10 @@ async function buildResumePDF(job, summaryText) {
   const { PDFDocument, rgb, StandardFonts } = PDFLib;
 
   const doc  = await PDFDocument.create();
-  const bold = await doc.embedFont(StandardFonts.TimesBold);
-  const reg  = await doc.embedFont(StandardFonts.TimesRoman);
-  const ital = await doc.embedFont(StandardFonts.TimesItalic);
+  // StandardFonts property names vary by version; fallbacks ensure compatibility
+  const bold = await doc.embedFont(StandardFonts.TimesRomanBold || StandardFonts.TimesBold || 'Times-Bold');
+  const reg  = await doc.embedFont(StandardFonts.TimesRoman || 'Times-Roman');
+  const ital = await doc.embedFont(StandardFonts.TimesRomanItalic || StandardFonts.TimesItalic || 'Times-Italic');
 
   const PAGE_W = 612, PAGE_H = 792;
   const ML = 54, MR = 54, MT = 44, MB = 44;
@@ -183,8 +184,8 @@ async function buildResumePDF(job, summaryText) {
   if (job.why) {
     sectionHeader('Why This Role');
     // Convert why from 2nd person to 1st
-    let whyText = (job.why||'').replace(/\byour\b/gi,'my').replace(/\byou\b/gi,'I')
-      .replace(/\byou've\b/gi,"I've").replace(/\byou're\b/gi,"I'm");
+    let whyText = (job.why||'').replace(/\byourself\b/gi,'myself').replace(/\byour\b/gi,'my').replace(/\byou\b/gi,'I')
+      .replace(/\byou've\b/gi,"I've").replace(/\byou're\b/gi,"I'm").replace(/\byours\b/gi,'mine');
     const whySentences = whyText.split('.').filter(s=>s.trim()).slice(0,2);
     bodyText(whySentences.join('. ').trim() + '.');
     y -= 3;
@@ -199,10 +200,10 @@ async function buildResumePDF(job, summaryText) {
     'Manages Title V air permit compliance including PCWP-MACT and BMACT standards; coordinates annual certifications, permit deviations, and all NCDEQ agency correspondence',
     'Directs monthly water quality sampling under NCMA certification and conducts regular compliance audits to manage facility-wide corrective actions through to closure',
     'Engineered a custom Power BI compliance analytics platform from scratch, utilized by 600+ employees to track real-time KPIs, inspection status, and corrective actions across sites',
-    'Automated roughly 80% of manual department reporting workflows using Python and Power Automate, resulting in a 30% reduction in monthly team working hours',
-    'Deployed AI agents for regulatory research in a live production environment, cutting technical documentation lookup time from hours to minutes',
+    'Automated 80% of manual department reporting workflows using Python and Power Automate, resulting in a 30% reduction in monthly team working hours',
+    'Deployed AI agents for regulatory research in a live production environment, leveraging GitHub Copilot to cut technical documentation lookup time from hours to minutes',
     'Led the nationwide rollout and training for an in-house digital inspection application for over 100 environmental managers across Georgia-Pacific operations',
-    'Runs weekly environmental compliance training for 200+ new plant hires and works directly with plant management on facility operations'
+    'Runs weekly environmental compliance training for 200+ new plant hires and works directly with plant management to identify operational value creation opportunities'
   ];
 
   for (const b of gpBullets) bullet(b);

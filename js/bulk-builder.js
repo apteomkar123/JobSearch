@@ -16,7 +16,7 @@ async function runBulkResumeGeneration() {
 
     for (const job of chunk) {
       // objective first-person summary template (ATS Optimized)
-      const summary = `Environmental and data professional with a B.S. from NC State and 2 years at Georgia-Pacific (Koch Industries) owning complex regulatory programs including Title V, SPCC, and RCRA. Proven track record building enterprise Power BI solutions and Python automation to optimize compliance. Expert in ${job.tags.slice(0,3).join(', ')} for ${job.company}.`;
+      const summary = `Environmental and data professional with a B.S. from NC State and 2 years at Georgia-Pacific owning complex regulatory programs (Title V, SPCC, RCRA) with zero violations. Proven track record building enterprise Power BI solutions and Python automation to optimize industrial compliance. Expertise in ${job.tags.slice(0,3).join(', ')} for ${job.company}.`;
       
       const result = await buildAndStoreResume(job, summary);
       if (result) {
