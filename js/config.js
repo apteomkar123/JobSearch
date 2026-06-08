@@ -10,6 +10,8 @@ window.RESUME_BASE_URL = 'https://zbzuoovbqhlywzbamlhk.supabase.co/storage/v1/ob
 // ── INITIAL STATE ────────────────────────────────────────────────────────────
 // Initializing these here ensures they exist before ui.js or init.js try to use them.
 window.RESUMES = {};
+window.COVER_LETTERS = {};
+window._clGenerating = {};
 window.resumesLoaded = false;
 window.resumeLoadError = null;
 

@@ -71,6 +71,106 @@ window.rebuildAllResumes = async function() {
   }
 };
 
+// ── COVER LETTER GENERATOR ────────────────────────────────────────────────────
+
+window.generateCoverLetter = async function(id) {
+  if (window._clGenerating[id]) return;
+  const job = (window.ALL_JOBS || []).find(j => j.id === id);
+  if (!job) { toast('Job not found'); return; }
+
+  window._clGenerating[id] = true;
+  window.render();
+  toast('Researching ' + job.company.split('(')[0].trim() + ' and drafting cover letter...');
+
+  try {
+    const today = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+
+    const resp = await fetch('/.netlify/functions/parse-job', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        system: `You write concise, highly specific cover letters for Omkar Apte. Use web search to research the company before writing — know what they actually do, their recent work or mission.
+
+CANDIDATE PROFILE — Omkar Apte:
+• Environmental Coordinator, Georgia-Pacific (Koch Industries), June 2024–Present
+  – Owns Title V air (PCWP-MACT, BMACT), SPCC, SWPPP/NPDES Stormwater, RCRA Hazardous Waste, and stormwater programs across two plywood and lumber facilities — zero major violations under any program
+  – Certified Method 9 visible emissions evaluator (biannual opacity evaluations, all regulated combustion sources)
+  – NCMA certified water quality sampling; monthly sampling, BMP inspections, corrective action tracking
+  – Built Power BI compliance analytics dashboard from scratch — 600+ users across both facilities, tracks KPIs, inspections, corrective actions in real time
+  – Automated ~80% of manual department reporting using Python and Power Automate — saves team ~30% of monthly hours
+  – Deployed AI agents for regulatory research using Python and GitHub Copilot — cuts permit lookup from hours to minutes
+  – Led company-wide rollout of in-house inspection application — trained 100+ environmental managers nationally
+  – Runs weekly environmental orientations for all new plant hires; primary compliance resource for supervisors and plant management
+  – Joined as youngest member of site management team; built authority to direct senior operators, contractors, and veterans through expertise
+• Mobile Engineering Intern, Qorvo (2021, 2022) — built C# data parsing tool that went to production
+• Co-Founder / CEO, Fertivo (2017–2018) — hardware startup, product development, revenue modeling
+• B.S. Environmental Science, NC State University, Aug 2024 | Minor in Economics
+• Personal: LyfeWare multi-app SSO ecosystem (React, Vite, Supabase, TypeScript, Expo, CI/CD)
+• Location: Raleigh, NC | omkarapte2010@gmail.com | (919) 717-7472
+
+WRITING RULES:
+1. Search the web for the company — understand what they actually do, their mission, a specific project or initiative to reference
+2. Write exactly 4 tight paragraphs:
+   Para 1 — Hook: open with something specific about the company's work or mission, then state the role. No "I am writing to express my interest."
+   Para 2 — Core GP experience tied directly to this role's specific requirements
+   Para 3 — Technical differentiators (Power BI, Python, AI agents, GIS — pick the ones most relevant to this role) + a concrete metric or two
+   Para 4 — Confident close: why this specific company, clear call to action
+3. Keep each paragraph to 3–4 sentences max — the letter must fit on one page
+4. Use specific metrics: "600+ users", "80% of manual reporting", "zero major violations"
+5. First person throughout ("I", "my") — never "you/your" referring to the candidate
+6. Today's date: ${today}
+
+Return ONLY a JSON object with no markdown:
+{
+  "date": "${today}",
+  "greeting": "Dear [specific name if found via web search, else 'Hiring Team'],",
+  "paragraphs": ["paragraph 1", "paragraph 2", "paragraph 3", "paragraph 4"],
+  "closing": "Sincerely,"
+}`,
+        messages: [{
+          role: 'user',
+          content: `Write a cover letter for this position:\n\nTitle: ${job.title}\nCompany: ${job.company}\nWork type: ${job.type || ''}\nJob URL: ${job.url || ''}\n\nFrom prior job analysis:\nWhy good fit: ${job.why || ''}\nResume angle: ${job.resume_angle || ''}\nKey requirements: ${(job.tags || []).join(', ')}\nPay: ${job.pay || ''}`
+        }]
+      })
+    });
+
+    if (!resp.ok) throw new Error('API error ' + resp.status);
+    const data = await resp.json();
+    const rawText = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+
+    let clData;
+    try {
+      const m = rawText.match(/\{[\s\S]*\}/);
+      if (!m) throw new Error('No JSON in response');
+      clData = JSON.parse(m[0]);
+    } catch(e) { throw new Error('Could not parse cover letter: ' + e.message); }
+
+    if (!Array.isArray(clData.paragraphs) || !clData.paragraphs.length) {
+      throw new Error('Cover letter missing paragraphs');
+    }
+
+    const pdfBytes = await window.buildCoverLetterPDF(job, clData);
+    let binary = '';
+    const bytes = new Uint8Array(pdfBytes);
+    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+    const b64 = btoa(binary);
+    const fname = 'Omkar Apte (' + job.company.split('(')[0].trim() + ' - ' + job.title + ') Cover Letter.pdf';
+
+    window.COVER_LETTERS[String(id)] = { name: fname, b64 };
+    toast('✓ Cover letter ready — click to download');
+
+  } catch(err) {
+    console.error('Cover letter generation failed:', err);
+    toast('Cover letter failed: ' + err.message);
+  } finally {
+    delete window._clGenerating[id];
+    window.render();
+  }
+};
+
 // ── PASTE JD MODAL ─────────────────────────────────────────────────────────────
 
 let _jdJobId = null;

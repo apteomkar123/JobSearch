@@ -305,6 +305,95 @@ async function buildResumePDF(job, summaryText) {
   return pdfBytes;
 }
 
+// ── COVER LETTER PDF BUILDER ──────────────────────────────────────────────────
+window.buildCoverLetterPDF = async function(job, clData) {
+  const { PDFDocument, rgb, StandardFonts } = PDFLib;
+
+  const doc  = await PDFDocument.create();
+  const bold = await doc.embedFont(StandardFonts.TimesRomanBold);
+  const reg  = await doc.embedFont(StandardFonts.TimesRoman);
+
+  const PAGE_W = 612, PAGE_H = 792;
+  const ML = 72, MR = 72, MT = 54, MB = 54;
+  const TW = PAGE_W - ML - MR;
+
+  let page = doc.addPage([PAGE_W, PAGE_H]);
+  let y = PAGE_H - MT;
+
+  const BLACK = rgb(0,0,0);
+  const LGRAY = rgb(0.5,0.5,0.5);
+  const DGRAY = rgb(0.35,0.35,0.35);
+
+  function wrapText(text, fontSize, font, maxW) {
+    const words = String(text).split(' ');
+    let line = '', lines = [];
+    for (const w of words) {
+      const test = line ? line + ' ' + w : w;
+      if (font.widthOfTextAtSize(test, fontSize) > maxW && line) { lines.push(line); line = w; }
+      else line = test;
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  function writePara(text, fontSize, font, color, lineH) {
+    const lines = wrapText(text, fontSize, font, TW);
+    for (const l of lines) {
+      if (y - fontSize < MB) { page = doc.addPage([PAGE_W, PAGE_H]); y = PAGE_H - MT; }
+      page.drawText(l, { x: ML, y: y - fontSize, size: fontSize, font, color });
+      y -= lineH;
+    }
+  }
+
+  // ── Header: name ─────────────────────────────────────────────────────────
+  const nameW = bold.widthOfTextAtSize('Omkar Apte', 18);
+  page.drawText('Omkar Apte', { x: ML + (TW - nameW) / 2, y: y - 18, size: 18, font: bold, color: BLACK });
+  y -= 26;
+
+  const contact = 'omkarapte2010@gmail.com  •  (919) 717-7472  •  Raleigh, NC  •  linkedin.com/in/omkar-apte-5ab8b7132';
+  const cw = reg.widthOfTextAtSize(contact, 8.5);
+  page.drawText(contact, { x: ML + (TW - cw) / 2, y: y - 8.5, size: 8.5, font: reg, color: LGRAY });
+  y -= 13;
+
+  page.drawLine({ start:{x:ML,y}, end:{x:ML+TW,y}, thickness:0.5, color:rgb(0.75,0.75,0.75) });
+  y -= 22;
+
+  // ── Date ─────────────────────────────────────────────────────────────────
+  page.drawText(clData.date || new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}),
+    { x: ML, y: y - 10, size: 10, font: reg, color: DGRAY });
+  y -= 24;
+
+  // ── Company ───────────────────────────────────────────────────────────────
+  page.drawText(job.company.split('(')[0].trim(),
+    { x: ML, y: y - 10, size: 10, font: bold, color: BLACK });
+  y -= 22;
+
+  // ── Greeting ──────────────────────────────────────────────────────────────
+  page.drawText(clData.greeting || 'Dear Hiring Team,',
+    { x: ML, y: y - 10, size: 10, font: reg, color: BLACK });
+  y -= 22;
+
+  // ── Body paragraphs ───────────────────────────────────────────────────────
+  for (const para of (clData.paragraphs || [])) {
+    writePara(para, 10, reg, BLACK, 14);
+    y -= 10;
+  }
+
+  // ── Closing ───────────────────────────────────────────────────────────────
+  y -= 2;
+  page.drawText(clData.closing || 'Sincerely,',
+    { x: ML, y: y - 10, size: 10, font: reg, color: BLACK });
+  y -= 38;
+  page.drawText('Omkar Apte',
+    { x: ML, y: y - 10, size: 10, font: bold, color: BLACK });
+
+  doc.setTitle('Cover Letter - Omkar Apte - ' + job.company);
+  doc.setAuthor('Omkar Apte');
+  doc.setSubject('Cover Letter for ' + job.title + ' at ' + job.company);
+
+  return await doc.save();
+};
+
 async function buildAndStoreResume(job, summaryText) {
   try {
     const pdfBytes = await buildResumePDF(job, summaryText);

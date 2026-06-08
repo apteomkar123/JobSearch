@@ -151,6 +151,8 @@ window.toggleRecent=(btn)=>{
       const cl=window.coverLetters[job.id]||'none';
       const ex=window.expanded===job.id;
       const hr=!!(window.RESUMES[String(job.id)]&&window.RESUMES[String(job.id)]!==null);
+      const hasCL=!!(window.COVER_LETTERS&&window.COVER_LETTERS[String(job.id)]);
+      const clBusy=!!(window._clGenerating&&window._clGenerating[job.id]);
       const src=s(job);
       const ats=calcATSScore(job);
       const atsPill=ats!==null?pill(`ATS ${ats}%`,ats>=70?'#10d98c':ats>=50?'#ffb340':'#ff5b5b'):pill('ATS N/A','#4a5a78');
@@ -186,13 +188,22 @@ window.toggleRecent=(btn)=>{
               <span style="font-family:var(--font-mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.12em">Status</span>
               ${STATUSES.map(ss=>`<button class="status-chip${st===ss?' active':''}" style="--chip-color:${SC[ss]}" onclick="setStatus(${job.id},'${ss}')">${ss}</button>`).join('')}
             </div>
-            ${hr
-              ? `<button onclick="window.downloadResume(${job.id})" class="btn btn-dl">⬇ Download Resume</button>`
-              : !window.resumesLoaded
-                ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">⟳ Resumes loading...</span>`
-                : window.resumeLoadError 
-                  ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--red)">⚠ ${window.resumeLoadError}</span>` 
-                  : `<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">No resume for this role yet</span>`}
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:2px">
+              ${hr
+                ?`<button onclick="window.downloadResume(${job.id})" class="btn btn-dl">⬇ Resume</button>`
+                :!window.resumesLoaded
+                  ?`<span style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">⟳ Resumes loading...</span>`
+                  :window.resumeLoadError
+                    ?`<span style="font-family:var(--font-mono);font-size:10px;color:var(--red)">⚠ ${window.resumeLoadError}</span>`
+                    :`<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">No resume yet</span>`
+              }
+              ${hasCL
+                ?`<button onclick="window.downloadCoverLetter(${job.id})" class="btn btn-dl" style="background:rgba(167,139,250,.1);border-color:rgba(167,139,250,.3);color:#a78bfa">⬇ Cover Letter</button>`
+                :clBusy
+                  ?`<button disabled class="btn" style="opacity:.5;font-size:10px;cursor:not-allowed;background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.2);color:#a78bfa">✉ Generating CL...</button>`
+                  :`<button onclick="window.generateCoverLetter(${job.id})" class="btn" style="background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.25);color:#a78bfa;font-size:10px">✉ Generate Cover Letter</button>`
+              }
+            </div>
           </div>
         </div>
       </div>`;
@@ -260,6 +271,23 @@ window.downloadResume=id=>{
     toast('Download failed — try again');
   }
 };
+window.downloadCoverLetter=id=>{
+  const cl=window.COVER_LETTERS&&window.COVER_LETTERS[String(id)];
+  if(!cl){toast('Cover letter not found');return;}
+  try{
+    const bytes=atob(cl.b64);
+    const arr=new Uint8Array(bytes.length);
+    for(let i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i);
+    const blob=new Blob([arr],{type:'application/pdf'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=cl.name||'Cover_Letter.pdf';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    toast('Downloading: '+cl.name);
+  }catch(e){toast('Download failed — try again');}
+};
+
 window.openRecruiterEmail=id=>{
   const j=ALL_JOBS.find(x=>x.id===id);if(!j||!j.recruiter)return;
   const name=j.recruiter.name||'Hiring Team';
@@ -465,6 +493,8 @@ window.render = function(){
     const cl=window.coverLetters[job.id]||'none';
     const ex=window.expanded===job.id;
     const hr=!!window.RESUMES[String(job.id)];
+    const hasCL=!!(window.COVER_LETTERS&&window.COVER_LETTERS[String(job.id)]);
+    const clBusy=!!(window._clGenerating&&window._clGenerating[job.id]);
     const src=s(job);
     const ats=calcATSScore(job);
     const atsPill=ats!==null?pill(`ATS ${ats}%`,ats>=70?'#10d98c':ats>=50?'#ffb340':'#ff5b5b'):pill('ATS N/A','#4a5a78');
@@ -506,14 +536,22 @@ window.render = function(){
             <span style="font-family:var(--font-mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.12em">Status</span>
             ${STATUSES.map(ss=>`<button class="status-chip${st===ss?' active':''}" style="--chip-color:${SC[ss]}" onclick="setStatus(${job.id},'${ss}')">${ss}</button>`).join('')}
           </div>
-          ${hr
-            ?`<button onclick="window.downloadResume(${job.id})" class="btn btn-dl">⬇ Download Resume</button>`
-            :!window.resumesLoaded
-              ?`<span style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">⟳ Resumes loading...</span>`
-              :window.resumeLoadError
-                ?`<span style="font-family:var(--font-mono);font-size:10px;color:var(--red)">⚠ ${window.resumeLoadError}</span>`
-                :`<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">No resume for this role yet</span>`
-          }
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:2px">
+            ${hr
+              ?`<button onclick="window.downloadResume(${job.id})" class="btn btn-dl">⬇ Resume</button>`
+              :!window.resumesLoaded
+                ?`<span style="font-family:var(--font-mono);font-size:10px;color:var(--amber)">⟳ Resumes loading...</span>`
+                :window.resumeLoadError
+                  ?`<span style="font-family:var(--font-mono);font-size:10px;color:var(--red)">⚠ ${window.resumeLoadError}</span>`
+                  :`<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">No resume yet</span>`
+            }
+            ${hasCL
+              ?`<button onclick="window.downloadCoverLetter(${job.id})" class="btn btn-dl" style="background:rgba(167,139,250,.1);border-color:rgba(167,139,250,.3);color:#a78bfa">⬇ Cover Letter</button>`
+              :clBusy
+                ?`<button disabled class="btn" style="opacity:.5;font-size:10px;cursor:not-allowed;background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.2);color:#a78bfa">✉ Generating CL...</button>`
+                :`<button onclick="window.generateCoverLetter(${job.id})" class="btn" style="background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.25);color:#a78bfa;font-size:10px">✉ Generate Cover Letter</button>`
+            }
+          </div>
           ${job.recruiter ? `
           <div style="margin-top:14px;padding:12px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)">
             <div style="font-family:var(--font-mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px">👤 Recruiter / Contact</div>
