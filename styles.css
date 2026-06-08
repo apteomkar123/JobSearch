@@ -212,6 +212,20 @@ body::after {
   align-items: center;
   animation: fadeSlideUp .5s .1s ease both;
 }
+.search-input {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 5px 10px;
+  outline: none;
+  width: 200px;
+  transition: border-color .15s;
+}
+.search-input:focus { border-color: var(--blue); }
+.search-input::placeholder { color: var(--text3); }
 .filter-row {
   display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
 }

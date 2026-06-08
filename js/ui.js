@@ -18,6 +18,7 @@ window.setFilter=(k,v,btn)=>{
   btn.parentElement.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');window.render();
 };
+window.setSearch=q=>{window.searchQuery=q.toLowerCase();window.render();};
 window.testFunction = async () => {
   const prog = document.getElementById('jobProgress');
   prog.classList.add('active');
@@ -402,6 +403,10 @@ window.render = function(){
     if(window.filters.flag==='flagged'&&!window.flags[j.id])return false;
     if(window.filters.cl==='needed'&&window.coverLetters[j.id]!=='needed')return false;
     if(window.filters.cl==='done'&&window.coverLetters[j.id]!=='done')return false;
+    if(window.searchQuery){
+      const q=window.searchQuery;
+      if(!(j.title||'').toLowerCase().includes(q)&&!(j.company||'').toLowerCase().includes(q))return false;
+    }
     return true;
   });
   if(window.sortBy==='fit')vis.sort((a,b)=>b.fit-a.fit);

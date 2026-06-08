@@ -66,6 +66,11 @@
 
 <!-- FILTERS -->
 <div class="filter-zone">
+  <div class="filter-row">
+    <span class="filter-lbl">Search</span>
+    <input type="text" id="searchInput" class="search-input" placeholder="title or company..." oninput="window.setSearch(this.value)">
+  </div>
+  <div class="divider"></div>
   <div class="filter-row" id="round-filter">
     <span class="filter-lbl">Round</span>
     <button class="fbtn active" onclick="setFilter('batch','all',this)">All</button>
