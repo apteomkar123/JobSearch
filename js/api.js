@@ -1,3 +1,76 @@
+// ── REBUILD ALL RESUMES ───────────────────────────────────────────────────────
+window.rebuildAllResumes = async function() {
+  const jobs = (window.ALL_JOBS || []).filter(Boolean);
+  const ids = Object.keys(window.RESUMES);
+  if (!ids.length) { toast('No resumes loaded yet — wait a moment and try again'); return; }
+
+  const btn = document.getElementById('rebuildBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Rebuilding...'; }
+
+  let built = 0, failed = 0;
+  const total = ids.length;
+
+  for (const idStr of ids) {
+    const r = window.RESUMES[idStr];
+    const job = jobs.find(j => j.id === parseInt(idStr));
+    if (!job) { failed++; continue; }
+
+    const tl = (job.title || '').toLowerCase();
+    const isDataJob = ['data','analytics','bi','python','sql','automation'].some(k => tl.includes(k));
+    const summary = r.summary || (isDataJob
+      ? 'Imaginative, inquisitive, driven, creative, and highly competent environmental and data professional with two years owning compliance programs and building data tools — Power BI dashboard used by 600+ employees, Python automation eliminating 80% of manual reporting, and AI agents for regulatory research — at two manufacturing facilities under Koch Industries. B.S. Environmental Science, NC State, minor in Economics.'
+      : 'Imaginative, inquisitive, driven, creative, and highly competent environmental compliance professional with two years owning Title V, SPCC, SWPPP, RCRA, and stormwater programs at two manufacturing facilities under Koch Industries — no major violations. Builds data tools: Power BI compliance dashboard (600+ users), Python automation, AI agents. B.S. Environmental Science, NC State, minor in Economics.');
+
+    const result = await buildAndStoreResume(job, summary);
+    if (result) built++; else { failed++; console.warn('Resume build failed for job', idStr); }
+
+    if (built % 20 === 0 || built === total) toast(`Building... ${built}/${total}`);
+    await new Promise(res => setTimeout(res, 10)); // yield to UI
+  }
+
+  toast(`Built ${built}/${total}. Uploading to Supabase...`);
+  console.log(`Rebuild complete: ${built} built, ${failed} failed`);
+
+  // Chunk rebuilt resumes into 12 files and upload to Supabase Storage
+  const allIds = Object.keys(window.RESUMES)
+    .filter(id => window.RESUMES[id] && window.RESUMES[id].b64)
+    .map(Number).sort((a,b) => a-b).map(String);
+
+  const chunkSize = Math.ceil(allIds.length / 12);
+  let uploadOk = 0, uploadFail = 0;
+
+  for (let i = 0; i < 12; i++) {
+    const sliceIds = allIds.slice(i * chunkSize, (i + 1) * chunkSize);
+    if (!sliceIds.length) continue;
+
+    const chunk = {};
+    for (const id of sliceIds) {
+      const r = window.RESUMES[id];
+      chunk[id] = { name: r.name, b64: r.b64 };
+    }
+
+    try {
+      const resp = await fetch(`${window.SB_URL}/storage/v1/object/resumes/resumes_${i}.json`, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + window.SB_KEY, 'Content-Type': 'application/json', 'x-upsert': 'true' },
+        body: JSON.stringify(chunk)
+      });
+      if (resp.ok) { uploadOk++; console.log(`resumes_${i}.json saved (${sliceIds.length} entries)`); }
+      else { uploadFail++; const e = await resp.text(); console.error(`resumes_${i}.json failed:`, resp.status, e); }
+    } catch(e) { uploadFail++; console.error(`resumes_${i}.json upload error:`, e); }
+
+    await new Promise(res => setTimeout(res, 300));
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = '↺ Rebuild Resumes'; }
+
+  if (uploadFail === 0) {
+    toast(`Done! ${built} resumes rebuilt and saved to Supabase.`);
+  } else {
+    toast(`Built ${built} resumes. ${uploadOk}/12 chunks saved. ${uploadFail} failed — check console. You may need to allow anon uploads in the Supabase storage bucket policy.`);
+  }
+};
+
 // ── ADD JOB FEATURE ────────────────────────────────────────────────────────────
 
 window.openAddJob = () => {
