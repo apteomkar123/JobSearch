@@ -6,6 +6,9 @@ window.toggleExpand=id=>{
   window.expanded=(window.expanded===id)?null:id;
   window.render();
   if(window.expanded){
+    // Auto-fetch JD if no tailored resume yet
+    const r=window.RESUMES&&window.RESUMES[String(id)];
+    if((!r||!r.freshBuild)&&typeof window.autoFetchJD==='function') window.autoFetchJD(id);
     requestAnimationFrame(()=>{
       const el=document.querySelector('.job-card.expanded');
       if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -154,11 +157,15 @@ window.toggleRecent=(btn)=>{
       const hr=!!(window.RESUMES[String(job.id)]&&window.RESUMES[String(job.id)]!==null);
       const hasCL=!!(window.COVER_LETTERS&&window.COVER_LETTERS[String(job.id)]);
       const clBusy=!!(window._clGenerating&&window._clGenerating[job.id]);
+      const autoFetching=!!(window._autoFetching&&window._autoFetching[job.id]);
       const src=s(job);
       const ats=calcATSScore(job);
-      const atsPill=ats!==null?pill(`ATS ${ats}%`,ats>=87?'#10d98c':ats>=75?'#ffb340':'#ff5b5b'):'';
+      const atsPill=autoFetching?pill('⟳ Fetching JD...','#4a5a78'):ats!==null?pill(`ATS ${ats}%`,ats>=87?'#10d98c':ats>=75?'#ffb340':'#ff5b5b'):'';
       const bodyContent=window.activeTab==='why'?(job.why||''):window.activeTab==='resume'?(job.resume_angle||''):
         `<span class="body-section-label">Benefits</span>${job.benefits||''}<span class="body-section-label" style="margin-top:10px">Bonus</span><span style="color:var(--green)">${job.bonus||''}</span>`;
+      const pasteBtn=autoFetching
+        ?`<button class="btn" disabled style="background:var(--bg2);border:1px solid var(--border2);color:var(--text3);font-size:10px;padding:5px 9px;opacity:.5;cursor:default">⟳ Fetching...</button>`
+        :`<button onclick="window.openJDModal(${job.id})" class="btn" style="background:var(--bg2);border:1px solid var(--border2);color:var(--text2);font-size:10px;padding:5px 9px">📋 Paste JD</button>`;
       return `<div class="job-card${ex?' expanded':''}" id="card-${job.id}">
         <div class="card-header" onclick="toggleExpand(${job.id})">
           <div class="card-left">
@@ -182,7 +189,7 @@ window.toggleRecent=(btn)=>{
             <div class="action-row">
               <a href="${job.url}" target="_blank" class="btn btn-apply">↗ Apply</a>
               <button onclick="openEmail(${job.id})" class="btn btn-email">✉ Draft Email</button>
-              <button onclick="window.openJDModal(${job.id})" class="btn" style="background:var(--bg2);border:1px solid var(--border2);color:var(--text2);font-size:10px;padding:5px 9px">📋 Paste JD</button>
+              ${pasteBtn}
               <button onclick="setFlag(${job.id},${!fl})" class="btn btn-flag${fl?' active':''}">${fl?'⭐ Flagged':'☆ Flag'}</button>
             </div>
             <div class="status-row">
@@ -424,11 +431,15 @@ window.render = function(){
     const hr=!!window.RESUMES[String(job.id)];
     const hasCL=!!(window.COVER_LETTERS&&window.COVER_LETTERS[String(job.id)]);
     const clBusy=!!(window._clGenerating&&window._clGenerating[job.id]);
+    const autoFetching=!!(window._autoFetching&&window._autoFetching[job.id]);
     const src=s(job);
     const ats=calcATSScore(job);
-    const atsPill=ats!==null?pill(`ATS ${ats}%`,ats>=70?'#10d98c':ats>=50?'#ffb340':'#ff5b5b'):pill('ATS N/A','#4a5a78');
+    const atsPill=autoFetching?pill('⟳ Fetching JD...','#4a5a78'):ats!==null?pill(`ATS ${ats}%`,ats>=87?'#10d98c':ats>=75?'#ffb340':'#ff5b5b'):'';
     const bodyContent=window.activeTab==='why'?(job.why||''):window.activeTab==='resume'?(job.resume_angle||''):
       `<span class="body-section-label">Benefits</span>${job.benefits||''}<span class="body-section-label" style="margin-top:10px">Bonus</span><span style="color:var(--green)">${job.bonus||''}</span>`;
+    const pasteBtn=autoFetching
+      ?`<button class="btn" disabled style="background:var(--bg2);border:1px solid var(--border2);color:var(--text3);font-size:10px;padding:5px 9px;opacity:.5;cursor:default">⟳ Fetching...</button>`
+      :`<button onclick="window.openJDModal(${job.id})" class="btn" style="background:var(--bg2);border:1px solid var(--border2);color:var(--text2);font-size:10px;padding:5px 9px">📋 Paste JD</button>`;
 
     return `<div class="job-card${ex?' expanded':''}" id="card-${job.id}">
       <div class="card-header" onclick="toggleExpand(${job.id})">
@@ -456,7 +467,7 @@ window.render = function(){
           <div class="action-row">
             <a href="${job.url}" target="_blank" class="btn btn-apply">↗ Apply</a>
             <button onclick="openEmail(${job.id})" class="btn btn-email">✉ Draft Email</button>
-            <button onclick="window.openJDModal(${job.id})" class="btn" style="background:var(--bg2);border:1px solid var(--border2);color:var(--text2);font-size:10px;padding:5px 9px">📋 Paste JD</button>
+            ${pasteBtn}
             <button onclick="setFlag(${job.id},${!fl})" class="btn btn-flag${fl?' active':''}">${fl?'⭐ Flagged':'☆ Flag'}</button>
             <button onclick="setCL(${job.id},'${cl==='needed'?'none':'needed'}')" class="btn btn-cl${cl==='needed'?' active':''}">${cl==='needed'?'✓ Needs CL':'+ Needs CL'}</button>
             <button onclick="setCL(${job.id},'${cl==='done'?'none':'done'}')" class="btn btn-cl btn-cl-done${cl==='done'?' active':''}">${cl==='done'?'✓ CL Done':'+ CL Done'}</button>

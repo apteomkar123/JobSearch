@@ -26,3 +26,4 @@ window.filters = { batch: 'all', status: 'all', flag: 'all', cl: 'all' };
 window.saveTimer = null;
 window.sbReady = false;
 window.searchQuery = '';
+window._autoFetching = {};

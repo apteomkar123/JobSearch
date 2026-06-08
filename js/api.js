@@ -215,6 +215,84 @@ function computeATSFromJD(jdText, job) {
   return Math.min(99, Math.round((matches / jdKeywords.length) * 100));
 }
 
+// ── AUTO JD FETCH ─────────────────────────────────────────────────────────────
+// Triggered when a card is expanded. Fetches the JD via web search, builds
+// a tailored resume, and computes a real ATS score. Silent fail → Paste JD fallback.
+window.autoFetchJD = async function(id) {
+  const job = (window.ALL_JOBS || []).find(j => j.id === id);
+  if (!job || !job.url) return;
+
+  const r = window.RESUMES && window.RESUMES[String(id)];
+  if (r && r.freshBuild) return; // Already has a JD-built resume
+  if (window._autoFetching[id]) return; // Already in progress
+
+  window._autoFetching[id] = true;
+  window.render();
+
+  try {
+    const resp = await fetch('/.netlify/functions/parse-job', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 3000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        system: `Fetch the job posting at the given URL and return structured data. Return ONLY a JSON object with no markdown:
+{
+  "accessible": true or false (false if the page is blocked, removed, or login-gated),
+  "jdText": "the full job description text as written on the page",
+  "tags": ["up to 6 key skill/requirement tags extracted from the JD"],
+  "fit": a number 1-100 estimating fit for this candidate,
+  "why": "2-3 sentences why Omkar fits this role, first person",
+  "resume_angle": "1-2 sentences on what to lead with",
+  "summary": "2-3 sentence resume summary. Must start with 'Imaginative, inquisitive, driven, creative, and highly competent'",
+  "pay": "salary range exactly as stated, or ''"
+}
+Candidate: Environmental Coordinator at Georgia-Pacific (Koch Industries), 2 years, owns Title V/SPCC/SWPPP/RCRA/stormwater programs, zero major violations. Power BI dashboard (600+ users), Python automation (80% manual reporting eliminated), AI agents, GIS. B.S. Environmental Science, NC State.`,
+        messages: [{ role: 'user', content: `Fetch and extract job data from: ${job.url}` }]
+      })
+    });
+
+    if (!resp.ok) throw new Error('API ' + resp.status);
+    const data = await resp.json();
+    const rawText = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+
+    const m = rawText.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('No JSON in response');
+    const parsed = JSON.parse(m[0]);
+
+    if (!parsed.accessible || !parsed.jdText || parsed.jdText.trim().length < 80) {
+      throw new Error('JD not accessible');
+    }
+
+    // Update job metadata in-place
+    if (Array.isArray(parsed.tags) && parsed.tags.length) job.tags = parsed.tags.slice(0, 6);
+    if (parsed.fit) job.fit = Math.min(99, Math.max(1, parseInt(parsed.fit) || job.fit));
+    if (parsed.why && parsed.why.trim()) job.why = parsed.why.trim();
+    if (parsed.resume_angle && parsed.resume_angle.trim()) job.resume_angle = parsed.resume_angle.trim();
+    if (parsed.pay && parsed.pay.trim()) job.pay = parsed.pay.trim();
+
+    // Build tailored resume
+    const summary = (parsed.summary && parsed.summary.trim()) ? parsed.summary.trim() : job.why;
+    const built = await buildAndStoreResume(job, summary);
+
+    // Compute genuine ATS score from the fetched JD text
+    if (built && parsed.jdText) {
+      const atsScore = computeATSFromJD(parsed.jdText, job);
+      if (atsScore !== null && window.RESUMES[String(id)]) {
+        window.RESUMES[String(id)].atsScore = atsScore;
+      }
+    }
+
+  } catch(err) {
+    console.log(`Auto JD fetch failed for job ${id} (${job.url}):`, err.message);
+    // Silent fail — "Paste JD" button remains as fallback
+  } finally {
+    delete window._autoFetching[id];
+    window.render();
+  }
+};
+
 // ── PASTE JD MODAL ─────────────────────────────────────────────────────────────
 
 let _jdJobId = null;
