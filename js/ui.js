@@ -220,6 +220,19 @@ window.setSort=(k,btn)=>{
 window.downloadResume=id=>{
   const r=window.RESUMES[String(id)];
   if(!r){toast('Resume loading — try again in a moment');return;}
+
+  // resumes_11.json stores {summary, gp_focus, name} but no b64 — build PDF on first download
+  if(!r.b64 && r.summary){
+    const job=(window.ALL_JOBS||[]).find(j=>j.id===parseInt(id));
+    if(!job){toast('Job data not found');return;}
+    toast('Building PDF — one moment...');
+    buildAndStoreResume(job,r.summary).then(built=>{
+      if(built) window.downloadResume(id);
+      else toast('Resume build failed — try again');
+    });
+    return;
+  }
+
   try{
     const bytes=atob(r.b64);
     const arr=new Uint8Array(bytes.length);
