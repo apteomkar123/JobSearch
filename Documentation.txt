@@ -185,13 +185,54 @@ WHAT WAS DONE
     Resume auto-boost (js/resume.js):
     - buildResumePDF() now calls window.calcATSScore(job) at the start
     - If score < 85, needsBoost = true
-    - When needsBoost: all 4 skill sections are unconditionally included in the resume
-      (Environmental Compliance, Data and Automation, GIS and Spatial Analysis,
-      AI and Technical) regardless of job type detection flags
-    - This maximizes keyword density in the generated PDF so an actual ATS scanner
-      would score the resume above 85 for any job in the candidate's field
-    - The fallback "Technical" section is suppressed when needsBoost is true
-      (replaced by the explicit sections which are more comprehensive)
+    - When needsBoost: missing high-value GP bullets are appended to selectedBullets
+      (capped at 8 total to preserve 2-page constraint)
+    - The 3 standard skill lines are always shown regardless of job type,
+      so keyword coverage is already comprehensive
+
+12. RESUME CONTENT OVERHAUL — GP EXPERIENCE + PDF ALIGNMENT (2026-06-08 session 3)
+
+    Source: Omkar Apte - May 2026 Resume.pdf (authoritative master resume)
+
+    GP bullet pool updated to exact PDF wording (js/resume.js):
+    - 11 named bullets in a flat `bp` object (own, titlev, method9, water, powerbi,
+      automate, ai, inspect, training, cost, ops)
+    - Previously MISSING bullets now added:
+        method9:  "Certified Method 9 visible emissions evaluator — conducts biannual
+                   opacity evaluations on all regulated combustion sources at both facilities"
+        cost:     "Active in site cost reduction program — identifies ways to minimize
+                   environmental program costs through waste reduction, process changes,
+                   and vendor management"
+        ops:      "Works directly with plant management on facility operations..."
+    - Updated wording on all existing bullets to match PDF exactly (stack test
+      scheduling, "estimated 30%", "program data in real time", GitHub Copilot in AI bullet)
+
+    Skills section restructured to match PDF exactly:
+    - Removed: Academic, Technical (HTML/CSS version), Personal skill lines
+    - Removed: conditional GIS and AI/Technical skill line sections
+    - Now always shows 3 standard lines matching the PDF:
+        Environmental Compliance: Title V Air (PCWP-MACT, BMACT), SPCC, SWPPP /
+          NPDES Stormwater, RCRA Hazardous Waste, Water Quality Monitoring,
+          Method 9 Opacity Evaluation, CWA / CAA, NCDEQ Coordination
+        Data and Automation: Power BI, Python, R, SQL, Power Automate, AI Agent
+          Deployment, GitHub Copilot, GIS / ArcGIS / QGIS
+        Communication: Technical Report Writing, Regulatory Submissions,
+          200+ Employee Training, Management Briefings, Cross-functional Coordination
+    - "Areas of Expertise" (job tags) still shown first when job has tags
+
+    Other entries updated to PDF wording:
+    - Qorvo 2022: "Got" → "Gained" in bullet 3
+    - Qorvo 2021: Added 4th bullet (RF testing lab exposure) from PDF
+    - Fertivo: Expanded from 3 to 5 bullets matching PDF (competitor research,
+      prototyping iterations bullets added)
+    - Education: Removed 5-bullet standalone Capstone section; replaced with 3
+      inline bullet points under B.S. degree entry (Minor, Relevant coursework,
+      Additional coursework) matching PDF exactly
+
+    2-page constraint:
+    - Each job type (isEHS, isData, isAI, isGIS, isImpl, else) selects 6-8 GP bullets
+    - needsBoost appends missing high-value bullets up to 8 total maximum
+    - Space budget confirmed: all content fits within 2 pages
 
 ════════════════════════════════════════════════════════════
 WHAT WASN'T DONE / KNOWN LIMITATIONS

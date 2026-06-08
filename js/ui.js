@@ -221,14 +221,20 @@ window.downloadResume=id=>{
   const r=window.RESUMES[String(id)];
   if(!r){toast('Resume loading — try again in a moment');return;}
 
-  // resumes_11.json stores {summary, gp_focus, name} but no b64 — build PDF on first download
-  if(!r.b64 && r.summary){
-    const job=(window.ALL_JOBS||[]).find(j=>j.id===parseInt(id));
+  const job=(window.ALL_JOBS||[]).find(j=>j.id===parseInt(id));
+  const ats=job&&typeof window.calcATSScore==='function'?window.calcATSScore(job):null;
+
+  // Rebuild if: no b64 yet (lazy build), OR ATS < 85 and not yet rebuilt with boost applied
+  const needsRebuild=(!r.b64&&r.summary)||(ats!==null&&ats<85&&!r.boosted&&job);
+  if(needsRebuild){
     if(!job){toast('Job data not found');return;}
-    toast('Building PDF — one moment...');
-    buildAndStoreResume(job,r.summary).then(built=>{
-      if(built) window.downloadResume(id);
-      else toast('Resume build failed — try again');
+    const summary=r.summary||'Environmental compliance professional with two years owning Title V, SPCC, SWPPP, RCRA, and stormwater programs at two manufacturing facilities. B.S. Environmental Science, NC State, minor in Economics.';
+    toast('Building optimized resume — one moment...');
+    buildAndStoreResume(job,summary).then(built=>{
+      if(built){
+        if(window.RESUMES[String(id)]) window.RESUMES[String(id)].boosted=true;
+        window.downloadResume(id);
+      } else toast('Resume build failed — try again');
     });
     return;
   }
