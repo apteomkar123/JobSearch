@@ -89,7 +89,7 @@ window.generateCoverLetter = async function(id) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 2000,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         system: `You write concise, highly specific cover letters for Omkar Apte. Use web search to research the company before writing — know what they actually do, their recent work or mission.
@@ -242,7 +242,7 @@ window.parseJD = async function() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1500,
         system: `You extract structured job data from a pasted job description and write a tailored resume summary for Omkar Apte.
 Candidate profile: Environmental Coordinator at Georgia-Pacific (Koch Industries), 2 years, owns Title V air, SPCC, SWPPP, RCRA hazardous waste, and stormwater programs — no major violations. Power BI compliance dashboard (600+ users), Python automation (80% manual reporting eliminated), AI agents, GitHub Copilot, GIS/ArcGIS, B.S. Environmental Science NC State, minor in Economics.
@@ -383,7 +383,7 @@ window.parseJobUrl = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 4000,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         system: `You are a job data extraction assistant. Your ONLY job is to extract structured data from a job posting URL and return it as a JSON object. 
@@ -486,7 +486,7 @@ Fetch the URL content first using web search if needed, then extract the data.`,
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 2000,
         system: `You write resume summaries. The candidate is Omkar Apte. Write the summary in a professional, first-person objective style. Lead EXACTLY with: "Imaginative, inquisitive, driven, creative, and highly competent environmental and data professional." Focus entirely on how the candidate's qualifications solve the specific needs of the employer. Do NOT use "you" or "your" to refer to the candidate. Do NOT use meta-commentary.
 Candidate Profile: Env Coordinator at GP (2yrs), Title V/SPCC/SWPPP/RCRA owner, Power BI (600+ users), Python automation, AI agents/Copilot, B.S. Env Science NC State.

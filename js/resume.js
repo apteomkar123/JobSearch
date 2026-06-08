@@ -220,24 +220,24 @@ async function buildResumePDF(job, summaryText) {
 
   let sel;
   if (isImpl) {
-    sel = [bp.inspect, bp.own, bp.titlev, bp.powerbi, bp.automate, bp.training];
+    sel = [bp.inspect, bp.own, bp.titlev, bp.powerbi, bp.automate, bp.training, bp.cost, bp.ai, bp.method9, bp.water, bp.ops];
   } else if (isAI) {
-    sel = [bp.ai, bp.automate, bp.powerbi, bp.inspect, bp.own, bp.training];
+    sel = [bp.ai, bp.automate, bp.powerbi, bp.inspect, bp.own, bp.training, bp.cost, bp.titlev, bp.water, bp.method9, bp.ops];
   } else if (isData) {
-    sel = [bp.powerbi, bp.automate, bp.ai, bp.own, bp.water, bp.training];
+    sel = [bp.powerbi, bp.automate, bp.ai, bp.own, bp.water, bp.training, bp.cost, bp.inspect, bp.titlev, bp.method9, bp.ops];
   } else if (isGIS) {
-    sel = [bp.own, bp.water, bp.titlev, bp.powerbi, bp.automate, bp.training];
+    sel = [bp.own, bp.water, bp.titlev, bp.powerbi, bp.automate, bp.training, bp.cost, bp.method9, bp.ai, bp.inspect, bp.ops];
   } else if (isEHS) {
-    sel = [bp.own, bp.titlev, bp.method9, bp.water, bp.powerbi, bp.automate, bp.training, bp.cost];
+    sel = [bp.own, bp.titlev, bp.method9, bp.water, bp.powerbi, bp.automate, bp.training, bp.cost, bp.ai, bp.inspect, bp.ops];
   } else {
-    sel = [bp.own, bp.powerbi, bp.automate, bp.ai, bp.inspect, bp.training];
+    sel = [bp.own, bp.powerbi, bp.automate, bp.ai, bp.inspect, bp.training, bp.cost, bp.titlev, bp.water, bp.method9, bp.ops];
   }
 
-  // When ATS < 85, fill in missing high-value bullets (cap at 8 total)
+  // When ATS < 85, fill in missing high-value bullets (cap at 11 total)
   if (needsBoost) {
-    const boost = [bp.powerbi, bp.automate, bp.ai, bp.own, bp.water, bp.method9];
+    const boost = [bp.powerbi, bp.automate, bp.ai, bp.own, bp.water, bp.method9, bp.inspect, bp.training, bp.cost, bp.titlev, bp.ops];
     for (const b of boost) {
-      if (sel.length >= 8) break;
+      if (sel.length >= 11) break;
       if (!sel.includes(b)) sel.push(b);
     }
   }
