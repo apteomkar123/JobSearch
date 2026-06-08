@@ -24,7 +24,7 @@
 <nav class="nav">
   <div>
     <div class="nav-brand">Omkar Apte</div>
-    <div class="nav-sub">Tech × Environment · 384 opportunities tracked</div>
+    <div class="nav-sub">Tech × Environment · 399 opportunities tracked</div>
   </div>
   <div class="nav-right">
     <button id="rebuildBtn" onclick="rebuildAllResumes()" class="btn" style="background:var(--bg2);border:1px solid var(--border2);color:var(--text3);font-size:11px;padding:6px 12px;cursor:pointer;border-radius:7px">
@@ -151,6 +151,23 @@
       </div>
     </div><!-- /panel-bulk -->
 
+  </div>
+</div>
+
+<!-- PASTE JD MODAL -->
+<div class="modal-backdrop" id="jdModal">
+  <div class="modal">
+    <div class="modal-title" id="jd-modal-title">Paste Job Description</div>
+    <div class="modal-sub">Paste the full job description below. Claude will extract skills, update this job's metadata, write a tailored summary, and rebuild your resume.</div>
+    <div id="jd-url-row" style="margin:8px 0 10px">
+      <a id="jd-url-link" href="#" target="_blank" style="font-family:var(--font-mono);font-size:10px;color:var(--blue);word-break:break-all">Open job posting ↗</a>
+    </div>
+    <textarea class="modal-input" id="jdInput" rows="10" style="resize:vertical;min-height:180px" placeholder="Paste the full job description here (title, responsibilities, requirements, etc.)..."></textarea>
+    <div class="modal-progress" id="jdProgress"></div>
+    <div class="modal-row">
+      <button class="btn-primary" id="jdParseBtn" onclick="parseJD()">Parse & Build Resume</button>
+      <button class="btn-secondary" onclick="closeJDModal()">Cancel</button>
+    </div>
   </div>
 </div>
 

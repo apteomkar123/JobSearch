@@ -234,6 +234,78 @@ WHAT WAS DONE
     - needsBoost appends missing high-value bullets up to 8 total maximum
     - Space budget confirmed: all content fits within 2 pages
 
+13. APPLY BUTTON URL FIX + BATCH 23 JOBS FROM Jobs2Add.md (2026-06-08 session 4)
+
+    Problem: When adding a job via the "Add Job" modal, Claude sometimes
+    returned a different URL in its JSON response than the one the user pasted.
+    The old code stored Claude's extracted URL instead of the user-pasted URL,
+    causing the Apply button to link to a generic company careers page.
+
+    Fix — api.js parseJobUrl():
+    - Changed `url: jobData.url || url` → `url: url`
+    - Now always stores the exact URL the user pasted into the modal
+
+    Fix — ui.js parseBulkUrls():
+    - Same bug existed in bulk parser: `url:job.url||url` → `url:url`
+    - Both single and bulk parsers now always use the user-provided URL
+
+    Batch 23 jobs added (IDs 385–399) from Jobs2Add.md specific links:
+    385  Bureau Veritas — Environmental Project Assessor
+    386  IDEX Corporation — Environmental Compliance Manager
+    387  ERM — Environmental Permitting Specialist (FERC)
+    388  Par Health (Endo) — Environmental Associate
+    389  ADP-hosted position (ID 601021, company unresolvable via WebFetch)
+    390  GAI Consultants — Environmental Specialist
+    391  Hart & Hickman — Mid-Level Environmental Consultant (Charlotte, NC)
+    392  Intersect Power — Environmental Role (lever.co link, 403 on fetch)
+    393  AECOM — Human Health and/or Ecological Risk Assessor
+    394  EHS Support LLC — Environmental Scientist (Ecological Assessment)
+    395  Duke Energy — EHS Consultant, Environmental Operations – Air (Raleigh)
+    396  Endurance Energy — Environmental Role
+    397  Barry-Wehmiller — Technical Resource and Regulatory Specialist
+    398  NC State University EH&S — Environmental Engineer / Stormwater Specialist
+    399  LinkedIn job view/4390493699
+
+    Total jobs: 384 → 399. Nav subtitle updated to "399 opportunities tracked."
+
+    Job metadata enriched with actual job description fetches for 3 entries:
+    - ID 391 Hart & Hickman: location corrected to Charlotte, NC (not Raleigh);
+      fit lowered to 62 (role requires 5-10 years); tags updated to Phase I/II ESA,
+      Vapor Intrusion, NC Brownfields
+    - ID 394 EHS Support LLC: title corrected to "Environmental Scientist
+      (Ecological Assessment)"; fit lowered to 60 (ecotox/ecology lean, Master's
+      preferred, NE/mid-Atlantic region preferred); updated tags and why/resume_angle
+    - ID 398 NC State: title corrected to "Environmental Engineer / Stormwater
+      Specialist"; pay confirmed $80K–$90K (up from $55K–$80K); fit raised to 85;
+      why/resume_angle updated to reflect MS4 stormwater program ownership match
+
+14. PASTE JD FEATURE — MANUAL JOB DESCRIPTION INPUT (2026-06-08 session 5)
+
+    Problem: Many job URLs (Workday, ADP, Lever 403s, JavaScript-rendered ATS)
+    cannot be fetched by WebFetch and so resumes fall back to generic metadata.
+
+    Solution: Added a "📋 Paste JD" button to every expanded job card.
+    When clicked, a modal opens showing:
+    - The job title and company
+    - A clickable link to the job posting URL
+    - A large textarea to paste the full job description
+
+    On "Parse & Build Resume":
+    1. Sends pasted text to Claude (parse-job Netlify function) asking for:
+       tags, fit score, why, resume_angle, pay, companySize, and a tailored
+       resume summary leading with the standard opening phrase
+    2. Updates the job's metadata in window.ALL_JOBS (in-memory, current session)
+    3. Calls buildAndStoreResume() with the new tailored summary → freshBuild PDF
+    4. Re-renders the dashboard and scrolls to the updated card
+    5. ATS score recalculates automatically on next render (uses updated tags)
+
+    Files changed:
+    - index.html: Added #jdModal modal markup (same pattern as addJobModal)
+    - js/api.js: Added window.openJDModal(id), window.closeJDModal(),
+      window.parseJD() functions; Escape key now closes either modal
+    - js/ui.js: Added "📋 Paste JD" button to both render() and toggleRecent()
+      action rows (both use window.openJDModal(job.id))
+
 ════════════════════════════════════════════════════════════
 WHAT WASN'T DONE / KNOWN LIMITATIONS
 ════════════════════════════════════════════════════════════
@@ -267,7 +339,7 @@ index.html                    Main app entry point
 styles.css                    All CSS styles
 js/
   config.js                   Supabase connection config
-  jobs-data.js                ALL_JOBS array (384 jobs)
+  jobs-data.js                ALL_JOBS array (399 jobs)
   state.js                    App state variables + resume loader
   persistence.js              Supabase + localStorage sync
   ui.js                       UI rendering, event handlers, helpers

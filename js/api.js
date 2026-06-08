@@ -71,6 +71,147 @@ window.rebuildAllResumes = async function() {
   }
 };
 
+// ── PASTE JD MODAL ─────────────────────────────────────────────────────────────
+
+let _jdJobId = null;
+
+window.openJDModal = function(id) {
+  _jdJobId = id;
+  const job = (window.ALL_JOBS || []).find(j => j.id === id);
+  if (!job) { toast('Job not found'); return; }
+
+  document.getElementById('jd-modal-title').textContent = job.title + ' — ' + job.company;
+  const link = document.getElementById('jd-url-link');
+  if (job.url) { link.href = job.url; link.style.display = ''; }
+  else { link.style.display = 'none'; }
+
+  document.getElementById('jdInput').value = '';
+  const prog = document.getElementById('jdProgress');
+  prog.innerHTML = '';
+  prog.classList.remove('active');
+  const btn = document.getElementById('jdParseBtn');
+  btn.disabled = false;
+  btn.textContent = 'Parse & Build Resume';
+  document.getElementById('jdModal').classList.add('open');
+  setTimeout(() => document.getElementById('jdInput').focus(), 100);
+};
+
+window.closeJDModal = function() {
+  document.getElementById('jdModal').classList.remove('open');
+};
+
+document.addEventListener('click', e => {
+  if (e.target.id === 'jdModal') closeJDModal();
+});
+
+window.parseJD = async function() {
+  const id = _jdJobId;
+  const jdText = document.getElementById('jdInput').value.trim();
+  if (!jdText || jdText.length < 30) { toast('Paste a job description first'); return; }
+
+  const job = (window.ALL_JOBS || []).find(j => j.id === id);
+  if (!job) { toast('Job not found'); return; }
+
+  const btn = document.getElementById('jdParseBtn');
+  btn.disabled = true;
+  btn.textContent = 'Working...';
+
+  const el = document.getElementById('jdProgress');
+  el.classList.add('active');
+  el.innerHTML = '';
+
+  function jdStep(msg, status = 'pend') {
+    el.innerHTML += `<span class="step-dot ${status}"></span>${msg}<br>`;
+    el.scrollTop = el.scrollHeight;
+  }
+  function jdDone(msg) {
+    const dots = el.querySelectorAll('.step-dot.pend');
+    if (dots.length) dots[dots.length - 1].className = 'step-dot done';
+    if (msg) jdStep(msg, 'done');
+  }
+  function jdFail(msg) {
+    const dots = el.querySelectorAll('.step-dot.pend');
+    if (dots.length) dots[dots.length - 1].className = 'step-dot fail';
+    jdStep(msg, 'fail');
+  }
+
+  try {
+    jdStep('Sending to Claude for analysis...');
+
+    const resp = await fetch('/.netlify/functions/parse-job', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        system: `You extract structured job data from a pasted job description and write a tailored resume summary for Omkar Apte.
+Candidate profile: Environmental Coordinator at Georgia-Pacific (Koch Industries), 2 years, owns Title V air, SPCC, SWPPP, RCRA hazardous waste, and stormwater programs — no major violations. Power BI compliance dashboard (600+ users), Python automation (80% manual reporting eliminated), AI agents, GitHub Copilot, GIS/ArcGIS, B.S. Environmental Science NC State, minor in Economics.
+
+Return ONLY a JSON object with no markdown:
+{
+  "tags": ["up to 6 key skill/requirement tags extracted directly from this JD"],
+  "fit": a number 1-100 estimating fit for this specific candidate at this specific role,
+  "why": "2-3 sentences explaining why this candidate is a strong fit for this specific role. Write in first person — use 'I' not 'you'.",
+  "resume_angle": "1-2 sentences on which specific aspects of the candidate's background to lead with for this role.",
+  "summary": "2-3 sentence resume summary. Lead EXACTLY with 'Imaginative, inquisitive, driven, creative, and highly competent'. Tailor specifically to this role's requirements. First person professional objective style.",
+  "pay": "salary range exactly as stated in the JD, or '' if not mentioned",
+  "companySize": "company size if mentioned in the JD, else ''"
+}`,
+        messages: [{ role: 'user', content: `Job: ${job.title} at ${job.company}\n\nJob Description:\n${jdText.slice(0, 8000)}` }]
+      })
+    });
+
+    if (!resp.ok) throw new Error('API error ' + resp.status);
+    const data = await resp.json();
+    const rawText = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+
+    let parsed;
+    try {
+      const m = rawText.match(/\{[\s\S]*\}/);
+      if (!m) throw new Error('No JSON in response');
+      parsed = JSON.parse(m[0]);
+    } catch(e) { throw new Error('Could not parse Claude response: ' + e.message); }
+
+    jdDone('Job description analyzed');
+
+    // Update job metadata in-place
+    jdStep('Updating job metadata...');
+    if (Array.isArray(parsed.tags) && parsed.tags.length) job.tags = parsed.tags.slice(0, 6);
+    if (parsed.fit) job.fit = Math.min(99, Math.max(1, parseInt(parsed.fit) || job.fit));
+    if (parsed.why && parsed.why.trim()) job.why = parsed.why.trim();
+    if (parsed.resume_angle && parsed.resume_angle.trim()) job.resume_angle = parsed.resume_angle.trim();
+    if (parsed.pay && parsed.pay.trim()) job.pay = parsed.pay.trim();
+    if (parsed.companySize && parsed.companySize.trim()) job.companySize = parsed.companySize.trim();
+    jdDone(`Updated: fit ${job.fit}%, tags [${job.tags.join(', ')}]`);
+
+    // Build the resume
+    jdStep('Building tailored PDF resume...');
+    const summary = (parsed.summary && parsed.summary.trim()) ? parsed.summary.trim() : job.why;
+    const built = await buildAndStoreResume(job, summary);
+    if (!built) throw new Error('Resume build failed');
+    jdDone('Resume built: ' + built.name);
+
+    window.render();
+    window.updateStats();
+
+    jdStep('✓ Done! Metadata and resume updated from job description.', 'done');
+    btn.textContent = 'Done ✓';
+
+    setTimeout(() => {
+      closeJDModal();
+      toast(`✓ Resume rebuilt for ${job.title} at ${job.company}`);
+      const card = document.getElementById(`card-${id}`);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 1800);
+
+  } catch(err) {
+    jdFail('Error: ' + err.message);
+    console.error('parseJD error:', err);
+    btn.disabled = false;
+    btn.textContent = 'Try Again';
+  }
+};
+
 // ── ADD JOB FEATURE ────────────────────────────────────────────────────────────
 
 window.openAddJob = () => {
@@ -97,7 +238,7 @@ document.addEventListener('click', e => {
 
 // Enter key to submit
 document.addEventListener('keydown', e => {
-  if(e.key === 'Escape') closeAddJob();
+  if(e.key === 'Escape') { closeAddJob(); closeJDModal(); }
   if(e.key === 'Enter' && document.getElementById('addJobModal').classList.contains('open')) parseJobUrl();
 });
 
@@ -219,7 +360,7 @@ Fetch the URL content first using web search if needed, then extract the data.`,
       type: jobData.type || 'Unknown',
       pay: jobData.pay || 'Not listed',
       payNum: jobData.payNum || 85000,
-      url: jobData.url || url,
+      url: url,
       fit: Math.min(99, Math.max(1, parseInt(jobData.fit) || 75)),
       source: 'direct',
       tags: Array.isArray(jobData.tags) ? jobData.tags.slice(0,6) : [],

@@ -86,7 +86,7 @@ window.parseBulkUrls = async () => {
       const newJob = {id:newId,batch:Math.max(..._jobs.map(j=>j.batch||1))+1,
         title:job.title,company:job.company,companySize:job.companySize||'',
         type:job.type||'Unknown',pay:job.pay||'Not listed',payNum:job.payNum||85000,
-        url:job.url||url,fit:Math.min(99,Math.max(1,parseInt(job.fit)||75)),
+        url:url,fit:Math.min(99,Math.max(1,parseInt(job.fit)||75)),
         source:'direct',tags:Array.isArray(job.tags)?job.tags.slice(0,6):[],
         benefits:job.benefits||'',bonus:job.bonus||'',why:job.why||'',
         resume_angle:job.resume_angle||'',badge:job.badge||'New Find',
@@ -179,6 +179,7 @@ window.toggleRecent=(btn)=>{
             <div class="action-row">
               <a href="${job.url}" target="_blank" class="btn btn-apply">↗ Apply</a>
               <button onclick="openEmail(${job.id})" class="btn btn-email">✉ Draft Email</button>
+              <button onclick="window.openJDModal(${job.id})" class="btn" style="background:var(--bg2);border:1px solid var(--border2);color:var(--text2);font-size:10px;padding:5px 9px">📋 Paste JD</button>
               <button onclick="setFlag(${job.id},${!fl})" class="btn btn-flag${fl?' active':''}">${fl?'⭐ Flagged':'☆ Flag'}</button>
             </div>
             <div class="status-row">
@@ -490,6 +491,7 @@ window.render = function(){
           <div class="action-row">
             <a href="${job.url}" target="_blank" class="btn btn-apply">↗ Apply</a>
             <button onclick="openEmail(${job.id})" class="btn btn-email">✉ Draft Email</button>
+            <button onclick="window.openJDModal(${job.id})" class="btn" style="background:var(--bg2);border:1px solid var(--border2);color:var(--text2);font-size:10px;padding:5px 9px">📋 Paste JD</button>
             <button onclick="setFlag(${job.id},${!fl})" class="btn btn-flag${fl?' active':''}">${fl?'⭐ Flagged':'☆ Flag'}</button>
             <button onclick="setCL(${job.id},'${cl==='needed'?'none':'needed'}')" class="btn btn-cl${cl==='needed'?' active':''}">${cl==='needed'?'✓ Needs CL':'+ Needs CL'}</button>
             <button onclick="setCL(${job.id},'${cl==='done'?'none':'done'}')" class="btn btn-cl btn-cl-done${cl==='done'?' active':''}">${cl==='done'?'✓ CL Done':'+ CL Done'}</button>
