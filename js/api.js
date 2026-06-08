@@ -112,16 +112,18 @@ CANDIDATE PROFILE — Omkar Apte:
 • Location: Raleigh, NC | omkarapte2010@gmail.com | (919) 717-7472
 
 WRITING RULES:
-1. Search the web for the company — understand what they actually do, their mission, a specific project or initiative to reference
+1. Search the web for the company -- understand what they actually do, their mission, a specific project or initiative to reference
 2. Write exactly 4 tight paragraphs:
-   Para 1 — Hook: open with something specific about the company's work or mission, then state the role. No "I am writing to express my interest."
-   Para 2 — Core GP experience tied directly to this role's specific requirements
-   Para 3 — Technical differentiators (Power BI, Python, AI agents, GIS — pick the ones most relevant to this role) + a concrete metric or two
-   Para 4 — Confident close: why this specific company, clear call to action
-3. Keep each paragraph to 3–4 sentences max — the letter must fit on one page
+   Para 1: Open with something specific about the company's work or mission, then state the role. No "I am writing to express my interest."
+   Para 2: Core GP experience tied directly to this role's specific requirements
+   Para 3: Technical differentiators (Power BI, Python, AI agents, GIS -- pick the ones most relevant to this role) plus a concrete metric or two
+   Para 4: Confident close -- why this specific company, clear call to action
+3. Keep each paragraph to 3-4 sentences max -- the letter must fit on one page
 4. Use specific metrics: "600+ users", "80% of manual reporting", "zero major violations"
-5. First person throughout ("I", "my") — never "you/your" referring to the candidate
-6. Today's date: ${today}
+5. First person throughout ("I", "my") -- never "you/your" referring to the candidate
+6. ABSOLUTELY NO em dashes (the long dash character). Use commas, colons, or plain connecting words instead. This rule has no exceptions.
+7. Write the way a real person actually talks. No corporate-speak, no template phrasing, no stiff formal constructions. The letter should sound like it genuinely came from a specific human who has done this work, not a polished AI output.
+8. Today's date: ${today}
 
 Return ONLY a JSON object with no markdown:
 {
@@ -151,6 +153,12 @@ Return ONLY a JSON object with no markdown:
     if (!Array.isArray(clData.paragraphs) || !clData.paragraphs.length) {
       throw new Error('Cover letter missing paragraphs');
     }
+
+    // Strip em dashes from all text fields regardless of what Claude outputs
+    const stripEmDash = s => (s || '').replace(/ — /g, ', ').replace(/—/g, ', ');
+    clData.paragraphs = clData.paragraphs.map(stripEmDash);
+    if (clData.greeting) clData.greeting = stripEmDash(clData.greeting);
+    if (clData.closing) clData.closing = stripEmDash(clData.closing);
 
     const pdfBytes = await window.buildCoverLetterPDF(job, clData);
     let binary = '';
