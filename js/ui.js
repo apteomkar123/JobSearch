@@ -277,32 +277,73 @@ window.openEmail=id=>{
 function pill(t,c){return `<span class="pill" style="background:${c}18;color:${c};border-color:${c}35">${t}</span>`;}
 
 // ── ATS SCORE CALCULATOR ─────────────────────────────────────────────────────────
-// Word-boundary matching — each job tag is split into words; a tag "matches"
-// if any of its words exactly appears in the candidate's verified skill set.
-// This prevents false positives like 'ai' matching 'training' via substring.
-const ATS_SKILL_WORDS = new Set([
-  // Environmental / EHS (strong, verified experience)
-  'environmental','ehs','hse','spcc','swppp','rcra','stormwater','npdes','mact','bmact',
-  'compliance','regulatory','permit','permitting','audit','auditing','inspection',
-  'hazardous','waste','sustainability','osha','safety','manufacturing','industrial',
-  'monitoring','remediation','corrective','wastewater','groundwater','coordinator',
-  'science','scientist','specialist','manager','engineer',
-  // Data / Analytics (strong experience)
-  'python','sql','excel','analytics','reporting','automation','dashboard','kpi',
-  'visualization','analysis','analyst','intelligence','tableau','spotfire','etl','database',
-  // AI / Tech (strong experience)
-  'copilot','programming','software','coding','javascript','typescript','html','css',
-  'digital','azure','aws','lms','erp','cloud','systems','sharepoint',
-  // GIS (moderate experience)
-  'arcgis','qgis','geospatial','spatial','mapping','esri',
-  // Soft / General (strong experience)
-  'training','communication','leadership','teamwork','documentation','management',
-  'project','implementation','consulting','consultant','coordination','research',
-  'planning','energy','climate','resources',
-  // Short-form — exact whole-word match only (safe because Set lookup is exact)
-  'bi','ai','gis','r',
+// Checks job tag words against every meaningful word in the candidate's full resume.
+// A tag "matches" if any of its words appears in CANDIDATE_WORDS (exact whole-word).
+const CANDIDATE_WORDS = new Set([
+  // ── GP role / regulatory programs ─────────────────────────────────────────
+  'environmental','coordinator','georgia','pacific','koch','industries',
+  'regulatory','compliance','programs','facilities','plywood','lumber',
+  'title','spcc','swppp','rcra','hazardous','waste','stormwater','violations',
+  'npdes','mact','bmact','pcwp','permit','permits','permitting','deviations',
+  'certifications','certification','certified','correspondence','ncdeq',
+  'air','emissions','opacity','evaluator','evaluations','combustion','sources',
+  'method','visible','biannual','stack','test','scheduling',
+  'water','quality','sampling','ncma','documentation','bmp','inspections',
+  'inspection','corrective','actions','closure','monthly','weekly',
+  'audit','auditing','audits','ehs','hse','osha','safety','health',
+  'industrial','manufacturing','facilities','facility','plant','site','operations',
+  'monitoring','remediation','wastewater','groundwater','wetlands',
+  'hazmat','spill','prevention','containment','discharge','effluent',
+  'violations','deviation','exceedance','threshold','limit','standard','standards',
+  'regulation','regulations','regulatory','federal','state','local','agency',
+  // ── Data / BI / Automation ────────────────────────────────────────────────
+  'power','python','sql','excel','analytics','reporting','automation','dashboard',
+  'dashboards','kpi','kpis','visualization','analysis','analyst','data','report',
+  'reports','intelligence','tableau','spotfire','etl','database','databases',
+  'automate','automated','workflow','workflows','query','queries','metrics',
+  'tracking','tracker','performance','output','input','processing','pipeline',
+  'bi','microsoft','office','sharepoint','teams','powerpoint','word','access',
+  'lms','erp','cloud','azure','aws','systems','platform','platforms',
+  // ── AI / Dev / Tech ───────────────────────────────────────────────────────
+  'ai','agents','agent','copilot','github','programming','software','coding',
+  'javascript','typescript','html','css','react','vite','expo','netlify',
+  'postgresql','supabase','realtime','triggers','authentication','sso','oauth',
+  'cicd','api','rest','json','schema','rls','typescript','digital','technology',
+  'technologies','application','applications','tool','tools','development',
+  'developer','deploy','deployed','deployment','build','built','production',
+  'scripting','scripts','code','codebase','testing','validation','integration',
+  'c','csharp','parsing','generator','characterization',
+  // ── GIS / Spatial ─────────────────────────────────────────────────────────
+  'arcgis','qgis','gis','geospatial','spatial','mapping','esri','maps','map',
+  'watershed','delineation','catchment','basin','terrain','topology',
+  'satellite','imagery','raster','vector','shapefile','geodatabase',
+  // ── Communication / Leadership / Management ───────────────────────────────
+  'training','communication','leadership','management','coordination','consulting',
+  'consultant','project','planning','research','documentation','teamwork',
+  'implementation','briefings','submissions','presentations','stakeholder',
+  'crossfunctional','interdepartmental','reporting','writing','technical',
+  'orientation','supervisors','operators','contractors','managers','directors',
+  'credibility','trust','authority','expertise','tenure','youngest','team',
+  // ── Sustainability / ESG / Climate ────────────────────────────────────────
+  'sustainability','climate','carbon','ghg','esg','emissions','greenhouse',
+  'energy','renewable','solar','wind','efficiency','footprint','lifecycle',
+  'lca','inventory','accounting','reporting','offset','sequestration',
+  'biodiversity','conservation','stewardship','resilience','net','zero',
+  'scope','reduction','targets','goals','science','based','sbti',
+  // ── Cost / Business / Strategy ────────────────────────────────────────────
+  'cost','reduction','savings','budget','vendor','management','procurement',
+  'strategy','strategic','policy','policies','process','processes','risk',
+  'assessment','assessment','mitigation','control','controls','program',
+  'startup','founder','revenue','streams','partnerships','contracts','sales',
+  // ── Education / Academic ──────────────────────────────────────────────────
+  'science','scientist','engineer','engineering','specialist','manager','analyst',
+  'economics','soil','natural','resource','resources','organic','chemistry',
+  'circuits','logic','electrical','capstone','planning','land','use',
+  'ncsu','university','degree','bachelor','minor','coursework','graduate',
+  // ── Short exact-match only ────────────────────────────────────────────────
+  'r','bi','ai','gis','vba','sap','crm','erm','iso',
 ]);
-const ATS_STOP = new Set(['and','for','the','with','in','of','to','a','an','or','on','at','by','as','is','be','are','was']);
+const ATS_STOP = new Set(['and','for','the','with','in','of','to','a','an','or','on','at','by','as','is','be','are','was','its','it','that','this','their','has','have','had','not','but','from','into','also','all','both','each','more','such','than','then','when','where','which','who','how','will','can','may','other','new','per']);
 
 function calcATSScore(job){
   try{
@@ -311,7 +352,7 @@ function calcATSScore(job){
     let matches=0;
     for(const tag of tags){
       const words=tag.split(/[\s\-\/,&+()]+/).filter(w=>w.length>=1&&!ATS_STOP.has(w));
-      if(words.some(w=>ATS_SKILL_WORDS.has(w))) matches++;
+      if(words.some(w=>CANDIDATE_WORDS.has(w))) matches++;
     }
     return Math.min(99,Math.round((matches/tags.length)*100));
   }catch(e){ return null; }
