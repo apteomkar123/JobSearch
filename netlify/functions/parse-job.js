@@ -27,14 +27,19 @@ exports.handler = async (event) => {
   catch (e) { return { statusCode: 400, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
   try {
+    const hasWebSearch = Array.isArray(reqBody.tools) &&
+      reqBody.tools.some(t => t.type && t.type.includes('web_search'));
+
+    const apiHeaders = {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    };
+    if (hasWebSearch) apiHeaders['anthropic-beta'] = 'web-search-2025-03-05';
+
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'web-search-2025-03-05',
-      },
+      headers: apiHeaders,
       body: JSON.stringify(reqBody),
     });
 
