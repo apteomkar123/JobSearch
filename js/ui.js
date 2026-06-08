@@ -222,19 +222,20 @@ window.downloadResume=id=>{
   if(!r){toast('Resume loading — try again in a moment');return;}
 
   const job=(window.ALL_JOBS||[]).find(j=>j.id===parseInt(id));
-  const ats=job&&typeof window.calcATSScore==='function'?window.calcATSScore(job):null;
 
-  // Rebuild if: no b64 yet (lazy build), OR ATS < 85 and not yet rebuilt with boost applied
-  const needsRebuild=(!r.b64&&r.summary)||(ats!==null&&ats<85&&!r.boosted&&job);
-  if(needsRebuild){
+  // Rebuild if: not built in this session (pre-built chunk PDF), or no b64 yet (lazy build)
+  // freshBuild:true is set by buildAndStoreResume — absent on all pre-loaded chunk resumes
+  if(!r.freshBuild){
     if(!job){toast('Job data not found');return;}
-    const summary=r.summary||'Environmental compliance professional with two years owning Title V, SPCC, SWPPP, RCRA, and stormwater programs at two manufacturing facilities. B.S. Environmental Science, NC State, minor in Economics.';
-    toast('Building optimized resume — one moment...');
+    const tl=(job.title||'').toLowerCase();
+    const isDataJob=['data','analytics','bi','python','sql','automation'].some(k=>tl.includes(k));
+    const summary=r.summary||(isDataJob
+      ?'Imaginative, inquisitive, driven, creative, and highly competent environmental and data professional with two years owning compliance programs and building data tools — Power BI dashboard used by 600+ employees, Python automation eliminating 80% of manual reporting, and AI agents for regulatory research — at two manufacturing facilities under Koch Industries. B.S. Environmental Science, NC State, minor in Economics.'
+      :'Imaginative, inquisitive, driven, creative, and highly competent environmental compliance professional with two years owning Title V, SPCC, SWPPP, RCRA, and stormwater programs at two manufacturing facilities under Koch Industries — no major violations. Builds data tools: Power BI compliance dashboard (600+ users), Python automation, AI agents. B.S. Environmental Science, NC State, minor in Economics.');
+    toast('Building resume — one moment...');
     buildAndStoreResume(job,summary).then(built=>{
-      if(built){
-        if(window.RESUMES[String(id)]) window.RESUMES[String(id)].boosted=true;
-        window.downloadResume(id);
-      } else toast('Resume build failed — try again');
+      if(built) window.downloadResume(id);
+      else toast('Resume build failed — try again');
     });
     return;
   }
