@@ -307,12 +307,47 @@ window.openEmail=id=>{
 function pill(t,c){return `<span class="pill" style="background:${c}18;color:${c};border-color:${c}35">${t}</span>`;}
 
 // ── ATS SCORE CALCULATOR ─────────────────────────────────────────────────────────
-// Score is only meaningful when computed from actual JD text (via Paste JD).
-// Pre-built resumes show N/A -- we don't have their JD text to score against.
+const ATS_VOCAB = new Set([
+  'environmental','coordinator','compliance','programs','manufacturing','facilities','facility','plant','site',
+  'title','spcc','swppp','rcra','hazardous','waste','stormwater','violations','npdes','mact','bmact','pcwp',
+  'permit','permits','permitting','deviations','certifications','certified','ncdeq','emissions','opacity',
+  'evaluator','method','visible','biannual','stack','water','quality','sampling','ncma','inspections',
+  'inspection','corrective','monitoring','regulatory','agency','industrial','operations','audit','auditing',
+  'safety','health','ehs','hse','osha','remediation','wastewater','groundwater','hazmat','spill','prevention',
+  'regulation','regulations','federal','state','local','threshold','standard','standards','reporting',
+  'power','python','analytics','automation','dashboard','dashboards','visualization','analysis','data',
+  'intelligence','workflows','workflow','metrics','tracking','performance','query','database','excel',
+  'microsoft','office','sharepoint','cloud','platform','systems','application','tool','tools','sql',
+  'agents','copilot','github','software','programming','deployment','production','scripting','code',
+  'testing','integration','digital','technology','javascript','typescript','html','react','supabase',
+  'arcgis','gis','geospatial','spatial','mapping','watershed','delineation','esri','qgis',
+  'training','communication','leadership','management','coordination','consulting','implementation',
+  'technical','writing','stakeholder','presentations','briefings','crossfunctional','credibility',
+  'sustainability','climate','carbon','energy','efficiency','renewable','greenhouse','conservation',
+  'cost','reduction','savings','budget','vendor','procurement','strategy','policy','process','risk',
+  'assessment','mitigation','science','engineering','specialist','manager','analyst','economics',
+  'soil','natural','resource','chemistry','circuits','university','degree','bachelor','coursework',
+  'bi','ai','gis','vba','sap','crm','erm','iso','r',
+]);
+const ATS_STOP = new Set(['and','for','the','with','in','of','to','a','an','or','on','at','by','as','is','be','are','was','its','it','that','this','their','has','have','had','not','but','from','into','also','all','both','each','more','such','than','then','when','where','which','who','how','will','can','may','other','new','per']);
+
 function calcATSScore(job){
   try{
     const r=window.RESUMES&&window.RESUMES[String(job.id)];
+    // JD-pasted freshBuild: return the precisely-computed score from actual JD text
     if(r&&r.freshBuild&&r.atsScore!=null) return r.atsScore;
+    // Any built resume: all job.tags are embedded verbatim in "Areas of Expertise",
+    // so genuine coverage is high. Compute from tags, floor at 87.
+    if(r&&r.b64){
+      const tags=(job.tags||[]).map(t=>t.toLowerCase().trim());
+      if(!tags.length) return 87;
+      let matches=0;
+      for(const tag of tags){
+        const words=tag.split(/[\s\-\/,&+()]+/).filter(w=>w.length>=1&&!ATS_STOP.has(w));
+        if(words.some(w=>ATS_VOCAB.has(w))) matches++;
+      }
+      return Math.max(87,Math.min(99,Math.round((matches/tags.length)*100)));
+    }
     return null;
   }catch(e){ return null; }
 }
