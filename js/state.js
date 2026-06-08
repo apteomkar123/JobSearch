@@ -25,5 +25,5 @@
     window.resumeLoadError = e.message;
   }
   window.resumesLoaded = true;
-  if(window.render) window.render();
+  try { if(window.render) window.render(); } catch(e) { console.error('Render error after resume load:', e); }
 })();

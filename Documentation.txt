@@ -1,5 +1,5 @@
 OMKAR APTE — JOB DASHBOARD DOCUMENTATION
-Last updated: 2026-06-04
+Last updated: 2026-06-08
 
 ════════════════════════════════════════════════════════════
 WHAT WAS DONE
@@ -133,6 +133,36 @@ WHAT WAS DONE
    Fix: Added resumesLoaded boolean flag to js/state.js. Set to true after the
    async chunk loading completes (whether chunks loaded or not). Updated render()
    and toggleRecent() in js/ui.js to use !resumesLoaded for the loading state.
+
+9. FIX — RENDER BUG: TypeError: Cannot read properties of undefined (reading 'map') (2026-06-08)
+   The async resume-chunk loader IIFE in state.js called window.render() after
+   completing (success or failure). If the render function threw synchronously,
+   it caused an uncaught promise rejection.
+   Additionally, window.ALL_JOBS could theoretically contain null/undefined
+   elements (from corrupted localStorage or a failed push), causing .map(j=>j.id)
+   calls to throw "Cannot read properties of undefined".
+   Fixes applied:
+   - state.js: wrapped final window.render() call in try-catch to prevent
+     uncaught promise rejection.
+   - ui.js render(): added Array.isArray guard + .filter(Boolean) on ALL_JOBS
+     so null/undefined elements never reach .map() or .filter() calls.
+   - ui.js updateStats(): same .filter(Boolean) guard added.
+   - ui.js parseBulkUrls(): same .filter(Boolean) guard before Math.max(ids).
+   - js/api.js parseJobUrl(): same .filter(Boolean) guard before Math.max(ids).
+
+10. ATS SCORE CALCULATOR ON EVERY JOB CARD (2026-06-08)
+    Added calcATSScore(job) function to js/ui.js.
+    Compares job tags against a 40+ skill keyword list derived from the candidate's
+    resume (env compliance, data/BI, AI/automation, GIS, soft skills, etc.).
+    Returns 0-99% match or null if no tags available.
+    Displayed as a color-coded pill on every job card:
+      - Green  (ATS XX%): 70%+ match
+      - Amber  (ATS XX%): 50-69% match
+      - Red    (ATS XX%): below 50%
+      - Gray   (ATS N/A): no tags to score against
+    Shown in both the main render() and toggleRecent() card templates.
+    The ATS_SKILLS keyword array is module-scoped (defined once, not per-call)
+    for efficiency across 384+ job renders.
 
 ════════════════════════════════════════════════════════════
 WHAT WASN'T DONE / KNOWN LIMITATIONS

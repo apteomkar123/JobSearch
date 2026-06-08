@@ -11748,7 +11748,6 @@ window.ALL_JOBS = [
       "linkedin_search": "https://www.linkedin.com/search/results/people/?keywords=Stantec+Raleigh+environmental+analyst+recruiter",
       "note": "Stantec's Raleigh office is growing. Air quality permitting and stormwater experience are their primary hiring needs in the Southeast."
     }
-  }
   },
   {
     "id": 385,

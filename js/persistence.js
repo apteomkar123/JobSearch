@@ -44,6 +44,7 @@ function lsLoad(){
   // Load custom jobs added via UI
   try {
     const custom = JSON.parse(localStorage.getItem('oa_custom_jobs') || '[]');
+    if (!window.ALL_JOBS) window.ALL_JOBS = [];
     custom.forEach(cj => {
       if(!window.ALL_JOBS.find(j => j.id === cj.id)) window.ALL_JOBS.push(cj);
     });

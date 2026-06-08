@@ -81,8 +81,9 @@ window.parseBulkUrls = async () => {
       if(!m) throw new Error('No JSON');
       const job  = JSON.parse(m[0]);
       if(!job.title||!job.company) throw new Error('Missing fields');
-      const newId = Math.max(...window.ALL_JOBS.map(j=>j.id))+1;
-      const newJob = {id:newId,batch:Math.max(...window.ALL_JOBS.map(j=>j.batch||1))+1,
+      const _jobs=window.ALL_JOBS.filter(Boolean);
+      const newId = Math.max(..._jobs.map(j=>j.id))+1;
+      const newJob = {id:newId,batch:Math.max(..._jobs.map(j=>j.batch||1))+1,
         title:job.title,company:job.company,companySize:job.companySize||'',
         type:job.type||'Unknown',pay:job.pay||'Not listed',payNum:job.payNum||85000,
         url:job.url||url,fit:Math.min(99,Math.max(1,parseInt(job.fit)||75)),
@@ -140,7 +141,8 @@ window.toggleRecent=(btn)=>{
   const active = btn.classList.toggle('active');
   if(active){
     // Show 20 most recently added (highest IDs)
-    const sorted=[...window.ALL_JOBS].sort((a,b)=>b.id-a.id).slice(0,20);
+    const jobs = (window.ALL_JOBS || []).filter(Boolean);
+    const sorted=[...jobs].sort((a,b)=>b.id-a.id).slice(0,20);
     const cards=document.getElementById('cards'); if(!cards)return;
     const s=j=>SRC[j.source]||SRC.direct;
     cards.innerHTML=sorted.map(job=>{
@@ -150,6 +152,8 @@ window.toggleRecent=(btn)=>{
       const ex=window.expanded===job.id;
       const hr=!!(window.RESUMES[String(job.id)]&&window.RESUMES[String(job.id)]!==null);
       const src=s(job);
+      const ats=calcATSScore(job);
+      const atsPill=ats!==null?pill(`ATS ${ats}%`,ats>=70?'#10d98c':ats>=50?'#ffb340':'#ff5b5b'):pill('ATS N/A','#4a5a78');
       const bodyContent=window.activeTab==='why'?(job.why||''):window.activeTab==='resume'?(job.resume_angle||''):
         `<span class="body-section-label">Benefits</span>${job.benefits||''}<span class="body-section-label" style="margin-top:10px">Bonus</span><span style="color:var(--green)">${job.bonus||''}</span>`;
       return `<div class="job-card${ex?' expanded':''}" id="card-${job.id}">
@@ -160,6 +164,7 @@ window.toggleRecent=(btn)=>{
               ${pill(src.label,src.color)}
               ${pill(st,SC[st])}
               ${fl?pill('⭐ Flagged','#ffb340'):''}
+              ${atsPill}
             </div>
             <div class="card-title">${job.title}</div>
             <div class="card-company">${job.company} <span style="color:var(--text3)">· ${job.companySize||''}</span></div>
@@ -250,6 +255,35 @@ window.openEmail=id=>{
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────────
 function pill(t,c){return `<span class="pill" style="background:${c}18;color:${c};border-color:${c}35">${t}</span>`;}
+
+// ── ATS SCORE CALCULATOR ─────────────────────────────────────────────────────────
+const ATS_SKILLS=[
+  'environmental','compliance','ehs','hse','regulatory','spcc','swppp','rcra','stormwater',
+  'npdes','water quality','water','air permit','method 9','permit','audit','inspection',
+  'title v','mact','bmact','caa','cwa','ncdeq','coordinator','specialist','manager',
+  'power bi','python','sql','r','excel','data analysis','analytics','reporting','bi',
+  'power automate','automation','dashboard','kpi','data visualization','data analytics',
+  'ai','machine learning','ai agents','github copilot','copilot','lms','systems',
+  'gis','arcgis','qgis','geospatial','mapping','spatial','esri',
+  'c#','javascript','html','css','programming','software','coding','typescript',
+  'project management','training','communication','microsoft office','documentation',
+  'report writing','leadership','teamwork','problem solving','sustainability','safety',
+  'osha','manufacturing','industrial','natural resources','energy','waste','hazardous',
+  'implementation','consultant','solutions','digital','cloud','database','etl',
+  'azure','aws','sharepoint','teams','power platform',
+];
+function calcATSScore(job){
+  try{
+    const tags=(job.tags||[]).map(t=>t.toLowerCase().trim());
+    if(!tags.length) return null;
+    let matches=0;
+    for(const tag of tags){
+      if(ATS_SKILLS.some(s=>tag.includes(s)||s.includes(tag))) matches++;
+    }
+    return Math.min(99,Math.round((matches/tags.length)*100));
+  }catch(e){ return null; }
+}
+
 let toastTimer;
 function toast(m){
   const el=document.getElementById('toast');
@@ -287,6 +321,7 @@ window.updateStats = function(){
   const app=Object.values(window.statuses).filter(s=>s!=='Not Applied').length;
   const itr=Object.values(window.statuses).filter(s=>['Interview','Offer'].includes(s)).length;
   const fl=Object.values(window.flags).filter(Boolean).length;
+  const allJobs = (window.ALL_JOBS || []).filter(Boolean);
   const animNum=(el,val)=>{
     const start=parseInt(el.textContent)||0, end=val, dur=600;
     const t0=performance.now();
@@ -297,20 +332,23 @@ window.updateStats = function(){
     };
     requestAnimationFrame(step);
   };
-  animNum(document.getElementById('s-total'),window.ALL_JOBS.length);
+  animNum(document.getElementById('s-total'),allJobs.length);
   animNum(document.getElementById('s-applied'),app);
   animNum(document.getElementById('s-interviews'),itr);
   animNum(document.getElementById('s-flagged'),fl);
-  const unapplied=window.ALL_JOBS.filter(j=>(window.statuses[j.id]||'Not Applied')==='Not Applied').length;
+  const unapplied=allJobs.filter(j=>(window.statuses[j.id]||'Not Applied')==='Not Applied').length;
   animNum(document.getElementById('s-unapplied'),unapplied);
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────────
 window.render = function(){
+  if(!Array.isArray(window.ALL_JOBS)) window.ALL_JOBS = [];
+
   // Round filter buttons (build once)
   const rfb=document.getElementById('round-filter');
-  if(rfb&&rfb.querySelectorAll('.fbtn').length<=1){
-    [...new Set(window.ALL_JOBS.map(j=>j.batch))].sort((a,b)=>a-b).forEach(b=>{
+  const allJobs = window.ALL_JOBS.filter(Boolean);
+  if(rfb && rfb.querySelectorAll('.fbtn').length <= 1 && allJobs.length > 0){
+    [...new Set(allJobs.map(j=>j.batch))].sort((a,b)=>a-b).forEach(b=>{
       const btn=document.createElement('button');
       btn.className='fbtn'; btn.textContent='R'+b;
       btn.onclick=function(){setFilter('batch',String(b),this);};
@@ -324,8 +362,8 @@ window.render = function(){
     .map(([k,l])=>`<button class="tab-btn${window.activeTab===k?' active':''}" onclick="setTab('${k}')">${l}</button>`).join('');
 
   // Filter + sort
-  let vis=(window.ALL_JOBS || []).filter(j=>{
-    if(!j || !window.filters) return false;
+  let vis=allJobs.filter(j=>{
+    if(!window.filters) return false;
     if(window.filters.batch!=='all'&&j.batch!==parseInt(window.filters.batch))return false;
     if(window.filters.status!=='all'&&(window.statuses[j.id]||'Not Applied')!==window.filters.status)return false;
     if(window.filters.flag==='flagged'&&!window.flags[j.id])return false;
@@ -346,6 +384,8 @@ window.render = function(){
     const ex=window.expanded===job.id;
     const hr=!!window.RESUMES[String(job.id)];
     const src=s(job);
+    const ats=calcATSScore(job);
+    const atsPill=ats!==null?pill(`ATS ${ats}%`,ats>=70?'#10d98c':ats>=50?'#ffb340':'#ff5b5b'):pill('ATS N/A','#4a5a78');
     const bodyContent=window.activeTab==='why'?(job.why||''):window.activeTab==='resume'?(job.resume_angle||''):
       `<span class="body-section-label">Benefits</span>${job.benefits||''}<span class="body-section-label" style="margin-top:10px">Bonus</span><span style="color:var(--green)">${job.bonus||''}</span>`;
 
@@ -358,6 +398,7 @@ window.render = function(){
             ${pill(st,SC[st])}
             ${fl?pill('⭐ Flagged','#ffb340'):''}
             ${cl==='needed'?pill('Needs CL','#a78bfa'):cl==='done'?pill('CL Done','#10d98c'):''}
+            ${atsPill}
           </div>
           <div class="card-title">${job.title}</div>
           <div class="card-company">${job.company} <span style="color:var(--text3)">· ${job.companySize||''}</span></div>

@@ -133,8 +133,9 @@ Fetch the URL content first using web search if needed, then extract the data.`,
 
     // ── STEP 2: Assign ID and defaults ─────────────────────────────────────
     step('Processing job data...');
-    const newId = Math.max(...window.ALL_JOBS.map(j => j.id)) + 1;
-    const batch = Math.max(...window.ALL_JOBS.map(j => j.batch || 1)) + 1;
+    const _jobs = window.ALL_JOBS.filter(Boolean);
+    const newId = Math.max(..._jobs.map(j => j.id)) + 1;
+    const batch = Math.max(..._jobs.map(j => j.batch || 1)) + 1;
 
     const newJob = {
       id: newId,
