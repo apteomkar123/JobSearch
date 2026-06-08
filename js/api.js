@@ -101,7 +101,7 @@ CANDIDATE PROFILE — Omkar Apte:
   – NCMA certified water quality sampling; monthly sampling, BMP inspections, corrective action tracking
   – Built Power BI compliance analytics dashboard from scratch — 600+ users across both facilities, tracks KPIs, inspections, corrective actions in real time
   – Automated ~80% of manual department reporting using Python and Power Automate — saves team ~30% of monthly hours
-  – Deployed AI agents for regulatory research using Python and GitHub Copilot — cuts permit lookup from hours to minutes
+  – Deployed AI agents and Python tooling for regulatory automation — built an air compliance report tool that auto-populates Title V and MACT templates from source data, eliminating manual data entry
   – Led company-wide rollout of in-house inspection application — trained 100+ environmental managers nationally
   – Runs weekly environmental orientations for all new plant hires; primary compliance resource for supervisors and plant management
   – Joined as youngest member of site management team; built authority to direct senior operators, contractors, and veterans through expertise
