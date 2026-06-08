@@ -306,6 +306,103 @@ WHAT WAS DONE
     - js/ui.js: Added "📋 Paste JD" button to both render() and toggleRecent()
       action rows (both use window.openJDModal(job.id))
 
+15. FETCH ALL JDs FEATURE + SUPABASE JD PERSISTENCE (2026-06-08 session 6)
+
+    Goal: Pre-fetch every job's JD once, build tailored resumes and compute
+    genuine ATS scores in bulk, store everything in Supabase — so future sessions
+    load data instantly without spending API credits per card.
+
+    New globals (js/config.js):
+    - window.JD_DATA = {}   // {[jobId]: {accessible, atsScore, tags, fit, why, resume_angle, pay}}
+    - window._autoFetching = {}  // tracks in-progress per-card JD fetches
+
+    New Supabase storage files:
+    - jd_data_0.json through jd_data_11.json  (12-chunk pattern matching resumes)
+    - Loaded in parallel with resume chunks in state.js
+    - Applied as metadata overrides to ALL_JOBS on load
+
+    js/state.js — full rewrite:
+    - Now fetches both resume chunks AND jd_data chunks simultaneously via Promise.all
+    - After load: iterates ALL_JOBS and applies any JD_DATA overrides (tags, fit, why,
+      resume_angle, pay) so card content reflects the most accurate data on first render
+
+    js/api.js — new functions:
+    - uploadResumeChunks(): extracted from rebuildAllResumes; uploads RESUMES to 12-chunk files
+    - uploadJDChunks(): uploads JD_DATA to 12 jd_data_*.json files in Supabase Storage
+    - window.fetchAllJDs(): batch operation for all 399 jobs
+        • Processes 3 jobs concurrently, 1.5s between batches (rate limit protection)
+        • Skips jobs where JD_DATA[id] !== undefined (already processed this run or loaded)
+        • For each job: web_search API call → extract JD → update metadata → build resume
+          → computeATSFromJD → store {accessible, atsScore, tags, fit, why, resume_angle, pay}
+        • On inaccessible: stores {accessible: false}
+        • Incremental save (uploadJDChunks + uploadResumeChunks) every 60 jobs
+        • Final save when all done
+    - computeATSFromJD(jdText, job): computes a genuine ATS score from actual JD text
+        • Extracts all 4+ character words from the JD, filters stopwords
+        • Checks each keyword against a broad resume vocabulary Set (100+ terms)
+        • Returns Math.min(99, matches/total * 100) — a real percentage, not fabricated
+    - window.autoFetchJD(id): triggered on card expand
+        • Checks JD_DATA[id] first; if anything is cached, skips the API call
+        • On success: stores {accessible: true, atsScore, ...metadata}
+        • On failure: stores {accessible: false}
+    - window.generateCoverLetter() and window.parseJD() already use computeATSFromJD
+
+    js/ui.js — updates:
+    - calcATSScore(job): now checks JD_DATA[id].atsScore for persisted scores
+      (falls back to RESUMES[id].atsScore for session-fresh builds, null if neither)
+    - render() card template: added inaccessibleBanner — shown when jdData.accessible===false
+      and not currently fetching. Yellow warning: "Couldn't access this posting — paste the JD..."
+    - toggleRecent() card template: same inaccessibleBanner logic added
+    - toggleExpand(): calls autoFetchJD on expand if no freshBuild resume exists
+
+    index.html:
+    - Added "⬇ Fetch All JDs" button to nav (id="fetchJDBtn") beside Rebuild Resumes
+    - Calls window.fetchAllJDs() on click
+
+    Model name fix (js/ui.js):
+    - testFunction() and parseBulkUrls() still used deprecated 'claude-sonnet-4-20250514'
+    - Replaced all remaining occurrences with 'claude-sonnet-4-6' across ui.js
+    - All active JS files now use the correct model name consistently
+
+    Search bar (js/ui.js, index.html, styles.css):
+    - Added window.setSearch(q) → sets window.searchQuery and re-renders
+    - render() filter chain now includes title/company text search
+    - Search input in filter zone with .search-input CSS class
+
+16. FETCH ALL COVER LETTERS FEATURE + SUPABASE CL PERSISTENCE (2026-06-08 session 6)
+
+    Goal: Pre-generate cover letters for all accessible jobs in bulk, store in
+    Supabase, and load them on startup so no per-card generation is ever needed.
+
+    New Supabase storage files:
+    - cl_data_0.json through cl_data_11.json (same 12-chunk pattern as resumes/JD data)
+    - Each chunk stores {[jobId]: {name, b64}} (base64-encoded cover letter PDFs)
+
+    js/state.js:
+    - Now fetches cl_data chunks in parallel alongside resume and JD data (3-way Promise.all)
+    - Merges results into window.COVER_LETTERS so hasCL checks work immediately on render
+
+    js/api.js:
+    - uploadCLChunks(): uploads window.COVER_LETTERS to 12 cl_data_*.json files in Supabase
+    - window.fetchAllCoverLetters(): batch CL generation
+        • Processes 2 jobs concurrently (CLs are expensive web-search calls)
+        • Skips if COVER_LETTERS[id] already exists (cached from previous run)
+        • Skips if JD_DATA[id].accessible === false (no JD to tailor from)
+        • Uses identical system prompt and rules as generateCoverLetter():
+          web search for company context, 4 paragraphs, no em dashes, human tone
+        • Strips em dashes post-generation
+        • Builds PDF via window.buildCoverLetterPDF (same as single CL generator)
+        • Incremental save every 20 jobs built
+        • Final save at end
+
+    index.html:
+    - Added "⬇ Fetch All CLs" button to nav (id="fetchCLBtn") beside Fetch All JDs
+
+    Usage:
+    1. Run "⬇ Fetch All JDs" first to populate JD_DATA for all accessible jobs
+    2. Then run "⬇ Fetch All CLs" to pre-generate all cover letters
+    3. On future loads, both JD metadata and CLs load from Supabase instantly
+
 ════════════════════════════════════════════════════════════
 WHAT WASN'T DONE / KNOWN LIMITATIONS
 ════════════════════════════════════════════════════════════

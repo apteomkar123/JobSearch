@@ -30,7 +30,7 @@ window.testFunction = async () => {
   try {
     const r = await fetch('/.netlify/functions/parse-job', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:10,messages:[{role:'user',content:'hi'}]})
+      body: JSON.stringify({model:'claude-sonnet-4-6',max_tokens:10,messages:[{role:'user',content:'hi'}]})
     });
     const text = await r.text();
     if(r.status === 401) stepFail('Function reached Anthropic but got 401. Check ANTHROPIC_API_KEY in Netlify Site Config > Environment Variables.');
@@ -73,7 +73,7 @@ window.parseBulkUrls = async () => {
       const resp = await fetch('/.netlify/functions/parse-job',{
         method:'POST', headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
-          model:'claude-sonnet-4-20250514', max_tokens:2000,
+          model:'claude-sonnet-4-6', max_tokens:2000,
           tools:[{type:'web_search_20250305',name:'web_search'}],
           system:`Extract job data from a URL. Return ONLY a JSON object: {title,company,companySize,type,pay,payNum,url,fit,source,tags,benefits,bonus,why,resume_angle,badge,badgeColor}. No markdown. Estimate 'fit' (1-100) for Omkar Apte: Env Coordinator 2 years at Georgia-Pacific, owns Title V/SPCC/SWPPP/RCRA programs, Power BI, Python automation, AI agents, B.S. Env Science NC State.`,
           messages:[{role:'user',content:`Extract job data from: ${url}`}]
@@ -117,7 +117,7 @@ window.parseBulkUrls = async () => {
 
       try{
         const rr = await fetch('/.netlify/functions/parse-job',{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,
+          body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,
             messages:[{role:'user',content:`Write a professional resume summary. Lead with: "Imaginative, inquisitive, driven, creative, and highly competent environmental and data professional." Tailor it for: ${newJob.title} at ${newJob.company}. Focus on how candidate (Omkar Apte) solves needs. 1st person objective style. Return ONLY the 2-3 sentence summary.`}]})
         });
         const rd = await rr.json();
@@ -158,6 +158,9 @@ window.toggleRecent=(btn)=>{
       const hasCL=!!(window.COVER_LETTERS&&window.COVER_LETTERS[String(job.id)]);
       const clBusy=!!(window._clGenerating&&window._clGenerating[job.id]);
       const autoFetching=!!(window._autoFetching&&window._autoFetching[job.id]);
+      const jdData=window.JD_DATA&&window.JD_DATA[String(job.id)];
+      const jdInaccessible=!autoFetching&&jdData&&jdData.accessible===false;
+      const inaccessibleBanner=jdInaccessible?`<div style="font-size:10px;color:var(--amber);font-family:var(--font-mono);padding:6px 0 2px">⚠ Couldn't access this posting — paste the JD to get a tailored resume and ATS score</div>`:``;
       const src=s(job);
       const ats=calcATSScore(job);
       const atsPill=autoFetching?pill('⟳ Fetching JD...','#4a5a78'):ats!==null?pill(`ATS ${ats}%`,ats>=87?'#10d98c':ats>=75?'#ffb340':'#ff5b5b'):'';
@@ -185,6 +188,7 @@ window.toggleRecent=(btn)=>{
         <div class="card-tags">${(job.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
         <div class="card-body${ex?' open':''}">
           <div class="card-body-inner">
+            ${inaccessibleBanner}
             <p class="body-text">${bodyContent}</p>
             <div class="action-row">
               <a href="${job.url}" target="_blank" class="btn btn-apply">↗ Apply</a>
@@ -314,13 +318,15 @@ window.openEmail=id=>{
 function pill(t,c){return `<span class="pill" style="background:${c}18;color:${c};border-color:${c}35">${t}</span>`;}
 
 // ── ATS SCORE CALCULATOR ─────────────────────────────────────────────────────────
-// A real ATS score requires matching the resume against the full JD text.
-// We only have that text when the user pastes it via the "Paste JD" modal.
-// Pre-built resumes return null (no pill shown) -- no JD to score against.
 function calcATSScore(job){
   try{
-    const r=window.RESUMES&&window.RESUMES[String(job.id)];
+    const id=String(job.id);
+    const r=window.RESUMES&&window.RESUMES[id];
+    // freshBuild this session: has computed score in memory
     if(r&&r.freshBuild&&r.atsScore!=null) return r.atsScore;
+    // Persisted from a previous fetchAllJDs / autoFetchJD run
+    const jd=window.JD_DATA&&window.JD_DATA[id];
+    if(jd&&jd.atsScore!=null) return jd.atsScore;
     return null;
   }catch(e){ return null; }
 }
@@ -432,6 +438,8 @@ window.render = function(){
     const hasCL=!!(window.COVER_LETTERS&&window.COVER_LETTERS[String(job.id)]);
     const clBusy=!!(window._clGenerating&&window._clGenerating[job.id]);
     const autoFetching=!!(window._autoFetching&&window._autoFetching[job.id]);
+    const jdData=window.JD_DATA&&window.JD_DATA[String(job.id)];
+    const jdInaccessible=!autoFetching&&jdData&&jdData.accessible===false;
     const src=s(job);
     const ats=calcATSScore(job);
     const atsPill=autoFetching?pill('⟳ Fetching JD...','#4a5a78'):ats!==null?pill(`ATS ${ats}%`,ats>=87?'#10d98c':ats>=75?'#ffb340':'#ff5b5b'):'';
@@ -440,6 +448,7 @@ window.render = function(){
     const pasteBtn=autoFetching
       ?`<button class="btn" disabled style="background:var(--bg2);border:1px solid var(--border2);color:var(--text3);font-size:10px;padding:5px 9px;opacity:.5;cursor:default">⟳ Fetching...</button>`
       :`<button onclick="window.openJDModal(${job.id})" class="btn" style="background:var(--bg2);border:1px solid var(--border2);color:var(--text2);font-size:10px;padding:5px 9px">📋 Paste JD</button>`;
+    const inaccessibleBanner=jdInaccessible?`<div style="font-size:10px;color:var(--amber);font-family:var(--font-mono);padding:6px 0 2px">⚠ Couldn't access this posting — paste the JD to get a tailored resume and ATS score</div>`:``;
 
     return `<div class="job-card${ex?' expanded':''}" id="card-${job.id}">
       <div class="card-header" onclick="toggleExpand(${job.id})">
@@ -463,6 +472,7 @@ window.render = function(){
       </div>
       <div class="card-body${ex?' open':''}">
         <div class="card-body-inner">
+          ${inaccessibleBanner}
           <p class="body-text">${bodyContent}</p>
           <div class="action-row">
             <a href="${job.url}" target="_blank" class="btn btn-apply">↗ Apply</a>

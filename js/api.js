@@ -1,3 +1,71 @@
+// ── SUPABASE UPLOAD HELPERS ───────────────────────────────────────────────────
+async function uploadResumeChunks() {
+  const allIds = Object.keys(window.RESUMES)
+    .filter(id => window.RESUMES[id] && window.RESUMES[id].b64)
+    .map(Number).sort((a,b)=>a-b).map(String);
+  const chunkSize = Math.ceil(allIds.length / 12) || 1;
+  let ok = 0, fail = 0;
+  for (let i = 0; i < 12; i++) {
+    const slice = allIds.slice(i * chunkSize, (i+1) * chunkSize);
+    if (!slice.length) continue;
+    const chunk = {};
+    for (const id of slice) { const r=window.RESUMES[id]; chunk[id]={name:r.name,b64:r.b64}; }
+    try {
+      const r = await fetch(`${window.SB_URL}/storage/v1/object/resumes/resumes_${i}.json`,{
+        method:'POST', headers:{'Authorization':'Bearer '+window.SB_KEY,'Content-Type':'application/json','x-upsert':'true'},
+        body:JSON.stringify(chunk)
+      });
+      r.ok ? ok++ : (fail++, console.error(`resumes_${i}.json failed:`,r.status,await r.text()));
+    } catch(e){ fail++; console.error(`resumes_${i}.json error:`,e); }
+    await new Promise(r=>setTimeout(r,300));
+  }
+  return {ok, fail};
+}
+
+async function uploadJDChunks() {
+  const allIds = Object.keys(window.JD_DATA).map(Number).sort((a,b)=>a-b).map(String);
+  if (!allIds.length) return {ok:0,fail:0};
+  const chunkSize = Math.ceil(allIds.length / 12) || 1;
+  let ok = 0, fail = 0;
+  for (let i = 0; i < 12; i++) {
+    const slice = allIds.slice(i * chunkSize, (i+1) * chunkSize);
+    if (!slice.length) continue;
+    const chunk = {};
+    for (const id of slice) chunk[id] = window.JD_DATA[id];
+    try {
+      const r = await fetch(`${window.SB_URL}/storage/v1/object/resumes/jd_data_${i}.json`,{
+        method:'POST', headers:{'Authorization':'Bearer '+window.SB_KEY,'Content-Type':'application/json','x-upsert':'true'},
+        body:JSON.stringify(chunk)
+      });
+      r.ok ? ok++ : (fail++, console.error(`jd_data_${i}.json failed:`,r.status,await r.text()));
+    } catch(e){ fail++; console.error(`jd_data_${i}.json error:`,e); }
+    await new Promise(r=>setTimeout(r,200));
+  }
+  return {ok, fail};
+}
+
+async function uploadCLChunks() {
+  const allIds = Object.keys(window.COVER_LETTERS).map(Number).sort((a,b)=>a-b).map(String);
+  if (!allIds.length) return {ok:0,fail:0};
+  const chunkSize = Math.ceil(allIds.length / 12) || 1;
+  let ok = 0, fail = 0;
+  for (let i = 0; i < 12; i++) {
+    const slice = allIds.slice(i * chunkSize, (i+1) * chunkSize);
+    if (!slice.length) continue;
+    const chunk = {};
+    for (const id of slice) chunk[id] = window.COVER_LETTERS[id];
+    try {
+      const r = await fetch(`${window.SB_URL}/storage/v1/object/resumes/cl_data_${i}.json`,{
+        method:'POST', headers:{'Authorization':'Bearer '+window.SB_KEY,'Content-Type':'application/json','x-upsert':'true'},
+        body:JSON.stringify(chunk)
+      });
+      r.ok ? ok++ : (fail++, console.error(`cl_data_${i}.json failed:`,r.status,await r.text()));
+    } catch(e){ fail++; console.error(`cl_data_${i}.json error:`,e); }
+    await new Promise(r=>setTimeout(r,200));
+  }
+  return {ok, fail};
+}
+
 // ── REBUILD ALL RESUMES ───────────────────────────────────────────────────────
 window.rebuildAllResumes = async function() {
   const jobs = (window.ALL_JOBS || []).filter(Boolean);
@@ -29,46 +97,270 @@ window.rebuildAllResumes = async function() {
   }
 
   toast(`Built ${built}/${total}. Uploading to Supabase...`);
-  console.log(`Rebuild complete: ${built} built, ${failed} failed`);
+  const {ok, fail} = await uploadResumeChunks();
+  if (btn) { btn.disabled = false; btn.textContent = '↺ Rebuild Resumes'; }
+  toast(fail === 0 ? `Done! ${built} resumes rebuilt and saved.` : `Built ${built}. ${ok}/12 chunks saved, ${fail} failed.`);
+};
 
-  // Chunk rebuilt resumes into 12 files and upload to Supabase Storage
-  const allIds = Object.keys(window.RESUMES)
-    .filter(id => window.RESUMES[id] && window.RESUMES[id].b64)
-    .map(Number).sort((a,b) => a-b).map(String);
+// ── FETCH ALL JDs ─────────────────────────────────────────────────────────────
+// One-time batch operation: fetches every job's JD via web search, builds
+// tailored resumes, computes real ATS scores, persists everything to Supabase.
+// After this runs once, autoFetchJD uses the cache — no more per-card API calls.
+window.fetchAllJDs = async function() {
+  const btn = document.getElementById('fetchJDBtn');
+  if (btn && btn.disabled) return; // Already running
+  if (btn) { btn.disabled = true; btn.textContent = '⟳ Fetching...'; }
 
-  const chunkSize = Math.ceil(allIds.length / 12);
-  let uploadOk = 0, uploadFail = 0;
+  const jobs = (window.ALL_JOBS || []).filter(j => j && j.url && j.url.startsWith('http'));
+  let done=0, built=0, inaccessible=0, skipped=0;
+  const total = jobs.length;
 
-  for (let i = 0; i < 12; i++) {
-    const sliceIds = allIds.slice(i * chunkSize, (i + 1) * chunkSize);
-    if (!sliceIds.length) continue;
+  toast(`Starting JD fetch for ${total} jobs — this will take several minutes`);
 
-    const chunk = {};
-    for (const id of sliceIds) {
-      const r = window.RESUMES[id];
-      chunk[id] = { name: r.name, b64: r.b64 };
+  // Process in batches of 3 concurrent requests
+  const BATCH = 3;
+  for (let i = 0; i < jobs.length; i += BATCH) {
+    const batch = jobs.slice(i, i + BATCH);
+
+    await Promise.all(batch.map(async job => {
+      const id = String(job.id);
+
+      // Skip if already in JD_DATA (processed on a previous run)
+      const existing = window.JD_DATA[id];
+      if (existing !== undefined) { skipped++; done++; return; }
+
+      // Skip if already has a JD-built resume from this session
+      const r = window.RESUMES && window.RESUMES[id];
+      if (r && r.freshBuild && r.atsScore != null) {
+        window.JD_DATA[id] = { accessible: true, atsScore: r.atsScore, tags: job.tags, fit: job.fit, why: job.why, resume_angle: job.resume_angle, pay: job.pay };
+        skipped++; done++; return;
+      }
+
+      try {
+        const resp = await fetch('/.netlify/functions/parse-job', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-6',
+            max_tokens: 2500,
+            tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+            system: `Fetch the job posting URL and return ONLY a JSON object with no markdown:
+{
+  "accessible": true or false,
+  "jdText": "complete job description text",
+  "tags": ["up to 6 key requirement tags"],
+  "fit": number 1-100,
+  "why": "2-3 sentences why Omkar fits this role (first person)",
+  "resume_angle": "1-2 sentences on what to lead with",
+  "summary": "2-3 sentence resume summary starting with 'Imaginative, inquisitive, driven, creative, and highly competent'",
+  "pay": "salary range or ''"
+}
+Set accessible:false if the page is paywalled, login-gated, or removed.
+Candidate: Environmental Coordinator at Georgia-Pacific (Koch Industries), 2 years, Title V/SPCC/SWPPP/RCRA/stormwater, zero violations, Power BI (600+ users), Python automation, AI agents, GIS. B.S. Env Science NC State.`,
+            messages: [{ role: 'user', content: `Fetch: ${job.url}` }]
+          })
+        });
+
+        if (!resp.ok) throw new Error('API ' + resp.status);
+        const data = await resp.json();
+        const raw = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+        const m = raw.match(/\{[\s\S]*\}/);
+        if (!m) throw new Error('No JSON');
+        const parsed = JSON.parse(m[0]);
+
+        if (!parsed.accessible || !parsed.jdText || parsed.jdText.trim().length < 80) {
+          window.JD_DATA[id] = { accessible: false };
+          inaccessible++; done++; return;
+        }
+
+        // Apply metadata overrides
+        if (Array.isArray(parsed.tags)&&parsed.tags.length) job.tags=parsed.tags.slice(0,6);
+        if (parsed.fit)             job.fit=Math.min(99,Math.max(1,parseInt(parsed.fit)||job.fit));
+        if (parsed.why?.trim())     job.why=parsed.why.trim();
+        if (parsed.resume_angle?.trim()) job.resume_angle=parsed.resume_angle.trim();
+        if (parsed.pay?.trim())     job.pay=parsed.pay.trim();
+
+        // Build tailored resume
+        const summary=(parsed.summary?.trim())||job.why;
+        const builtResume = await buildAndStoreResume(job, summary);
+
+        // Compute genuine ATS score
+        let atsScore = null;
+        if (builtResume && parsed.jdText) {
+          atsScore = computeATSFromJD(parsed.jdText, job);
+          if (atsScore !== null && window.RESUMES[id]) window.RESUMES[id].atsScore = atsScore;
+        }
+
+        window.JD_DATA[id] = { accessible: true, atsScore, tags: job.tags, fit: job.fit, why: job.why, resume_angle: job.resume_angle, pay: job.pay };
+        built++; done++;
+
+      } catch(err) {
+        console.warn(`JD fetch failed job ${id}:`, err.message);
+        window.JD_DATA[id] = { accessible: false };
+        inaccessible++; done++;
+      }
+    }));
+
+    // Progress toast every 30 jobs
+    if (done % 30 < BATCH || done >= total) {
+      toast(`Fetching JDs: ${done}/${total} — ${built} built, ${inaccessible} inaccessible, ${skipped} cached`);
     }
 
-    try {
-      const resp = await fetch(`${window.SB_URL}/storage/v1/object/resumes/resumes_${i}.json`, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + window.SB_KEY, 'Content-Type': 'application/json', 'x-upsert': 'true' },
-        body: JSON.stringify(chunk)
-      });
-      if (resp.ok) { uploadOk++; console.log(`resumes_${i}.json saved (${sliceIds.length} entries)`); }
-      else { uploadFail++; const e = await resp.text(); console.error(`resumes_${i}.json failed:`, resp.status, e); }
-    } catch(e) { uploadFail++; console.error(`resumes_${i}.json upload error:`, e); }
+    // Incremental save every 60 jobs so a mid-run close doesn't lose everything
+    if (done % 60 < BATCH) {
+      await uploadJDChunks();
+      await uploadResumeChunks();
+    }
 
-    await new Promise(res => setTimeout(res, 300));
+    // Brief delay between batches to avoid rate limits
+    if (i + BATCH < jobs.length) await new Promise(r => setTimeout(r, 1500));
   }
 
-  if (btn) { btn.disabled = false; btn.textContent = '↺ Rebuild Resumes'; }
+  toast(`All done — ${built} resumes built, ${inaccessible} inaccessible, ${skipped} already cached. Saving to Supabase...`);
+  await uploadJDChunks();
+  await uploadResumeChunks();
 
-  if (uploadFail === 0) {
-    toast(`Done! ${built} resumes rebuilt and saved to Supabase.`);
-  } else {
-    toast(`Built ${built} resumes. ${uploadOk}/12 chunks saved. ${uploadFail} failed — check console. You may need to allow anon uploads in the Supabase storage bucket policy.`);
+  if (btn) { btn.disabled = false; btn.textContent = '⬇ Fetch All JDs'; }
+  toast(`Saved. ${built} tailored resumes + JD data stored in Supabase.`);
+  window.render();
+};
+
+// ── FETCH ALL COVER LETTERS ───────────────────────────────────────────────────
+// Bulk generates CLs for every job with an accessible JD and stores to Supabase.
+// After this runs once, the CLs load on startup — no per-card generation needed.
+window.fetchAllCoverLetters = async function() {
+  const btn = document.getElementById('fetchCLBtn');
+  if (btn && btn.disabled) return;
+  if (btn) { btn.disabled = true; btn.textContent = '⟳ Building CLs...'; }
+
+  const today = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  const jobs = (window.ALL_JOBS || []).filter(j => j && j.url && j.url.startsWith('http'));
+
+  // Only build for jobs with an accessible JD — inaccessible ones can't be tailored
+  const eligible = jobs.filter(j => {
+    const jd = window.JD_DATA[String(j.id)];
+    return !jd || jd.accessible !== false; // include if not yet fetched OR if accessible
+  });
+
+  let done=0, built=0, skipped=0, failed=0;
+  const total = eligible.length;
+
+  toast(`Building cover letters for ${total} jobs — this will take a while`);
+
+  const BATCH = 2; // conservative — CLs are large web-search requests
+  for (let i = 0; i < eligible.length; i += BATCH) {
+    const batch = eligible.slice(i, i + BATCH);
+
+    await Promise.all(batch.map(async job => {
+      const id = String(job.id);
+
+      // Skip if CL already exists
+      if (window.COVER_LETTERS[id]) { skipped++; done++; return; }
+
+      try {
+        const resp = await fetch('/.netlify/functions/parse-job', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-6',
+            max_tokens: 2000,
+            tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+            system: `You write concise, highly specific cover letters for Omkar Apte. Use web search to research the company before writing — know what they actually do, their recent work or mission.
+
+CANDIDATE PROFILE — Omkar Apte:
+• Environmental Coordinator, Georgia-Pacific (Koch Industries), June 2024–Present
+  – Owns Title V air (PCWP-MACT, BMACT), SPCC, SWPPP/NPDES Stormwater, RCRA Hazardous Waste, and stormwater programs across two plywood and lumber facilities — zero major violations under any program
+  – Certified Method 9 visible emissions evaluator (biannual opacity evaluations, all regulated combustion sources)
+  – NCMA certified water quality sampling; monthly sampling, BMP inspections, corrective action tracking
+  – Built Power BI compliance analytics dashboard from scratch — 600+ users across both facilities, tracks KPIs, inspections, corrective actions in real time
+  – Automated ~80% of manual department reporting using Python and Power Automate — saves team ~30% of monthly hours
+  – Deployed AI agents and Python tooling for regulatory automation — built an air compliance report tool that auto-populates Title V and MACT templates from source data, eliminating manual data entry
+  – Led company-wide rollout of in-house inspection application — trained 100+ environmental managers nationally
+  – Runs weekly environmental orientations for all new plant hires; primary compliance resource for supervisors and plant management
+  – Joined as youngest member of site management team; built authority to direct senior operators, contractors, and veterans through expertise
+• Mobile Engineering Intern, Qorvo (2021, 2022) — built C# data parsing tool that went to production
+• Co-Founder / CEO, Fertivo (2017–2018) — hardware startup, product development, revenue modeling
+• B.S. Environmental Science, NC State University, Aug 2024 | Minor in Economics
+• Personal: LyfeWare multi-app SSO ecosystem (React, Vite, Supabase, TypeScript, Expo, CI/CD)
+• Location: Raleigh, NC | omkarapte2010@gmail.com | (919) 717-7472
+
+WRITING RULES:
+1. Search the web for the company -- understand what they actually do, their mission, a specific project or initiative to reference
+2. Write exactly 4 tight paragraphs:
+   Para 1: Open with something specific about the company's work or mission, then state the role. No "I am writing to express my interest."
+   Para 2: Core GP experience tied directly to this role's specific requirements
+   Para 3: Technical differentiators (Power BI, Python, AI agents, GIS -- pick the ones most relevant to this role) plus a concrete metric or two
+   Para 4: Confident close -- why this specific company, clear call to action
+3. Keep each paragraph to 3-4 sentences max -- the letter must fit on one page
+4. Use specific metrics: "600+ users", "80% of manual reporting", "zero major violations"
+5. First person throughout ("I", "my") -- never "you/your" referring to the candidate
+6. ABSOLUTELY NO em dashes (the long dash character). Use commas, colons, or plain connecting words instead. This rule has no exceptions.
+7. Write the way a real person actually talks. No corporate-speak, no template phrasing, no stiff formal constructions. The letter should sound like it genuinely came from a specific human who has done this work, not a polished AI output.
+8. Today's date: ${today}
+
+Return ONLY a JSON object with no markdown:
+{
+  "date": "${today}",
+  "greeting": "Dear [specific name if found via web search, else 'Hiring Team'],",
+  "paragraphs": ["paragraph 1", "paragraph 2", "paragraph 3", "paragraph 4"],
+  "closing": "Sincerely,"
+}`,
+            messages: [{
+              role: 'user',
+              content: `Write a cover letter for this position:\n\nTitle: ${job.title}\nCompany: ${job.company}\nWork type: ${job.type||''}\nJob URL: ${job.url||''}\n\nFrom prior job analysis:\nWhy good fit: ${job.why||''}\nResume angle: ${job.resume_angle||''}\nKey requirements: ${(job.tags||[]).join(', ')}\nPay: ${job.pay||''}`
+            }]
+          })
+        });
+
+        if (!resp.ok) throw new Error('API ' + resp.status);
+        const data = await resp.json();
+        const rawText = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+
+        const m = rawText.match(/\{[\s\S]*\}/);
+        if (!m) throw new Error('No JSON in response');
+        let clData = JSON.parse(m[0]);
+
+        if (!Array.isArray(clData.paragraphs) || !clData.paragraphs.length) throw new Error('Missing paragraphs');
+
+        const stripEmDash = s => (s||'').replace(/ — /g,', ').replace(/—/g,', ');
+        clData.paragraphs = clData.paragraphs.map(stripEmDash);
+        if (clData.greeting) clData.greeting = stripEmDash(clData.greeting);
+        if (clData.closing)  clData.closing  = stripEmDash(clData.closing);
+
+        const pdfBytes = await window.buildCoverLetterPDF(job, clData);
+        let binary = '';
+        const bArr = new Uint8Array(pdfBytes);
+        for (let k = 0; k < bArr.byteLength; k++) binary += String.fromCharCode(bArr[k]);
+        const b64 = btoa(binary);
+        const fname = 'Omkar Apte (' + job.company.split('(')[0].trim() + ' - ' + job.title + ') Cover Letter.pdf';
+
+        window.COVER_LETTERS[id] = { name: fname, b64 };
+        built++; done++;
+
+      } catch(err) {
+        console.warn(`CL batch failed job ${id}:`, err.message);
+        failed++; done++;
+      }
+    }));
+
+    if (done % 20 < BATCH || done >= total) {
+      toast(`Cover letters: ${done}/${total} — ${built} built, ${skipped} cached, ${failed} failed`);
+    }
+
+    // Incremental save every 20 built so a crash doesn't lose everything
+    if (built > 0 && done % 20 < BATCH) {
+      await uploadCLChunks();
+    }
+
+    if (i + BATCH < eligible.length) await new Promise(r => setTimeout(r, 2000));
   }
+
+  toast(`All done — ${built} built, ${skipped} cached, ${failed} failed. Saving to Supabase...`);
+  await uploadCLChunks();
+
+  if (btn) { btn.disabled = false; btn.textContent = '⬇ Fetch All CLs'; }
+  toast(`Saved. ${built} cover letters stored in Supabase.`);
+  window.render();
 };
 
 // ── COVER LETTER GENERATOR ────────────────────────────────────────────────────
@@ -223,7 +515,12 @@ window.autoFetchJD = async function(id) {
   if (!job || !job.url) return;
 
   const r = window.RESUMES && window.RESUMES[String(id)];
-  if (r && r.freshBuild) return; // Already has a JD-built resume
+  if (r && r.freshBuild) return; // Built this session
+
+  // Check persisted JD data — skip API call if already processed
+  const cached = window.JD_DATA && window.JD_DATA[String(id)];
+  if (cached !== undefined) return; // Already processed (accessible or not) — just render
+
   if (window._autoFetching[id]) return; // Already in progress
 
   window._autoFetching[id] = true;
@@ -262,6 +559,7 @@ Candidate: Environmental Coordinator at Georgia-Pacific (Koch Industries), 2 yea
     const parsed = JSON.parse(m[0]);
 
     if (!parsed.accessible || !parsed.jdText || parsed.jdText.trim().length < 80) {
+      window.JD_DATA[String(id)] = { accessible: false };
       throw new Error('JD not accessible');
     }
 
@@ -276,17 +574,19 @@ Candidate: Environmental Coordinator at Georgia-Pacific (Koch Industries), 2 yea
     const summary = (parsed.summary && parsed.summary.trim()) ? parsed.summary.trim() : job.why;
     const built = await buildAndStoreResume(job, summary);
 
-    // Compute genuine ATS score from the fetched JD text
+    // Compute genuine ATS score and persist to JD_DATA
+    let atsScore = null;
     if (built && parsed.jdText) {
-      const atsScore = computeATSFromJD(parsed.jdText, job);
+      atsScore = computeATSFromJD(parsed.jdText, job);
       if (atsScore !== null && window.RESUMES[String(id)]) {
         window.RESUMES[String(id)].atsScore = atsScore;
       }
     }
+    window.JD_DATA[String(id)] = { accessible: true, atsScore, tags: job.tags, fit: job.fit, why: job.why, resume_angle: job.resume_angle, pay: job.pay };
 
   } catch(err) {
-    console.log(`Auto JD fetch failed for job ${id} (${job.url}):`, err.message);
-    // Silent fail — "Paste JD" button remains as fallback
+    console.log(`Auto JD fetch failed for job ${id}:`, err.message);
+    if (!window.JD_DATA[String(id)]) window.JD_DATA[String(id)] = { accessible: false };
   } finally {
     delete window._autoFetching[id];
     window.render();

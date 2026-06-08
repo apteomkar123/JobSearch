@@ -27,3 +27,4 @@ window.saveTimer = null;
 window.sbReady = false;
 window.searchQuery = '';
 window._autoFetching = {};
+window.JD_DATA = {};      // {[jobId]: {accessible, atsScore, tags, fit, why, resume_angle, pay}}
