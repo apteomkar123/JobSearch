@@ -306,16 +306,13 @@ window.openEmail=id=>{
 function pill(t,c){return `<span class="pill" style="background:${c}18;color:${c};border-color:${c}35">${t}</span>`;}
 
 // ── ATS SCORE CALCULATOR ─────────────────────────────────────────────────────────
-// Every built resume embeds all job.tags verbatim in "Areas of Expertise", so
-// the score is genuine -- the keywords are actually in the document.
+// Score is only meaningful when computed from actual JD text (via Paste JD).
+// Pre-built resumes show N/A -- we don't have their JD text to score against.
 function calcATSScore(job){
   try{
     const r=window.RESUMES&&window.RESUMES[String(job.id)];
-    // JD-pasted freshBuild: return the score computed at build time
     if(r&&r.freshBuild&&r.atsScore!=null) return r.atsScore;
-    // Pre-built resume (from chunks): all job.tags were embedded when built → genuine 99%
-    if(r&&r.b64) return (job.tags||[]).length>0?99:94;
-    return null; // No resume built yet
+    return null;
   }catch(e){ return null; }
 }
 window.calcATSScore = calcATSScore;

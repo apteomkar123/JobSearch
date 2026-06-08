@@ -402,10 +402,10 @@ async function buildAndStoreResume(job, summaryText) {
     for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
     const b64 = btoa(binary);
     const fname = 'Omkar Apte (' + job.company.split('(')[0].trim() + ' - ' + job.title + ') Resume.pdf';
-    // All job.tags are embedded verbatim in "Areas of Expertise", so genuine coverage = 99%.
-    const builtATS = (job.tags || []).length > 0 ? 99 : 94;
-    window.RESUMES[String(job.id)] = { name: fname, b64, freshBuild: true, atsScore: builtATS };
-    return { name: fname, b64, freshBuild: true, atsScore: builtATS };
+    // atsScore is null here; parseJD will compute and inject a genuine score
+    // from the actual JD text after this function returns.
+    window.RESUMES[String(job.id)] = { name: fname, b64, freshBuild: true, atsScore: null };
+    return { name: fname, b64, freshBuild: true, atsScore: null };
   } catch(e) {
     console.error('Resume build failed:', e);
     return null;

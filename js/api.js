@@ -179,6 +179,42 @@ Return ONLY a JSON object with no markdown:
   }
 };
 
+// ── ATS SCORE FROM JD TEXT ────────────────────────────────────────────────────
+function computeATSFromJD(jdText, job) {
+  const stop = new Set(['and','for','the','with','in','of','to','a','an','or','on','at','by','as','is','be','are','was','its','it','that','this','their','has','have','had','not','but','from','into','also','all','both','each','more','such','than','then','when','where','which','who','how','will','can','may','other','new','per','we','our','you','your','they','them','been','being','does','did','would','shall','should','might','must','could','about','over','after','before','between','through','without','within','including','experience','years','role','position','work','team','company','business','required','preferred','responsibilities','qualifications','skills','ability','strong','excellent','knowledge','understanding','demonstrated','proven','effectively','ensure','support','develop','provide','manage','maintain','responsible','opportunity','candidate','apply','equal','employer','employment','compensation','location','full','time','part','contract','have','this','will','that','with','from','your','their','which','when','what','where','they','been','being','does','also','both','some','than']);
+
+  const jdKeywords = [...new Set(
+    jdText.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(w => w.length >= 4 && !stop.has(w))
+  )];
+  if (!jdKeywords.length) return null;
+
+  const resumeVocab = new Set([
+    ...(job.tags || []).flatMap(t => t.toLowerCase().split(/[\s\-\/,&+()]+/).filter(w => w.length >= 2)),
+    'environmental','coordinator','compliance','programs','manufacturing','facilities','facility','plant','site',
+    'title','spcc','swppp','rcra','hazardous','waste','stormwater','violations','npdes','mact','bmact','pcwp',
+    'permit','permits','permitting','deviations','certifications','certified','ncdeq','emissions','opacity',
+    'evaluator','method','visible','biannual','stack','water','quality','sampling','ncma','inspections',
+    'inspection','corrective','monitoring','regulatory','agency','industrial','operations','audit','auditing',
+    'safety','health','remediation','wastewater','groundwater','hazmat','spill','prevention','containment',
+    'regulation','regulations','federal','state','local','threshold','standard','standards','ehs','hse','osha',
+    'power','python','analytics','reporting','automation','dashboard','dashboards','visualization','analysis',
+    'data','intelligence','workflows','workflow','metrics','tracking','performance','query','queries','database',
+    'excel','microsoft','office','sharepoint','cloud','platform','systems','application','tool','tools',
+    'agents','copilot','github','software','programming','deployment','production','scripting','code',
+    'testing','integration','digital','technology','technologies','javascript','typescript','html','react',
+    'arcgis','gis','geospatial','spatial','mapping','watershed','delineation','esri','qgis','maps',
+    'training','communication','leadership','management','coordination','consulting','implementation',
+    'technical','writing','stakeholder','presentations','briefings','crossfunctional','credibility','expertise',
+    'sustainability','climate','carbon','energy','efficiency','renewable','greenhouse','conservation','ecology',
+    'cost','reduction','savings','budget','vendor','procurement','strategy','policy','process','risk',
+    'assessment','mitigation','startup','revenue','science','engineering','specialist','manager','analyst',
+    'economics','soil','natural','resource','chemistry','circuits','university','degree','bachelor','coursework',
+  ]);
+
+  const matches = jdKeywords.filter(w => resumeVocab.has(w)).length;
+  return Math.min(99, Math.round((matches / jdKeywords.length) * 100));
+}
+
 // ── PASTE JD MODAL ─────────────────────────────────────────────────────────────
 
 let _jdJobId = null;
@@ -297,7 +333,13 @@ Return ONLY a JSON object with no markdown:
     const summary = (parsed.summary && parsed.summary.trim()) ? parsed.summary.trim() : job.why;
     const built = await buildAndStoreResume(job, summary);
     if (!built) throw new Error('Resume build failed');
-    jdDone('Resume built: ' + built.name);
+
+    // Compute genuine ATS score from actual JD text
+    const atsScore = computeATSFromJD(jdText, job);
+    if (atsScore !== null && window.RESUMES[String(id)]) {
+      window.RESUMES[String(id)].atsScore = atsScore;
+    }
+    jdDone('Resume built: ' + built.name + (atsScore !== null ? ' · ATS ' + atsScore + '%' : ''));
 
     window.render();
     window.updateStats();
@@ -539,8 +581,6 @@ Return ONLY a JSON object:
     // ── STEP 4: Add job to ALL_JOBS and dashboard ───────────────────────────
     step('Adding to dashboard...');
     window.ALL_JOBS.push(newJob);
-
-    window.RESUMES[String(newJob.id)] = null;  // null = building
 
     // Update nav subtitle
     const navSub = document.querySelector('.nav-sub');
