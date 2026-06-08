@@ -235,7 +235,7 @@ window.downloadResume=id=>{
       :'Imaginative, inquisitive, driven, creative, and highly competent environmental compliance professional with two years owning Title V, SPCC, SWPPP, RCRA, and stormwater programs at two manufacturing facilities under Koch Industries — no major violations. Builds data tools: Power BI compliance dashboard (600+ users), Python automation, AI agents. B.S. Environmental Science, NC State, minor in Economics.');
     toast('Building resume — one moment...');
     buildAndStoreResume(job,summary).then(built=>{
-      if(built) window.downloadResume(id);
+      if(built){ window.render(); window.downloadResume(id); }
       else toast('Resume build failed — try again');
     });
     return;
@@ -348,6 +348,12 @@ const ATS_STOP = new Set(['and','for','the','with','in','of','to','a','an','or',
 
 function calcATSScore(job){
   try{
+    // If a resume was freshBuilt for this job, return its stored coverage score.
+    // The built resume embeds all job tags in Areas of Expertise + boosted skill
+    // lines, so the stored score reflects actual keyword coverage in the PDF.
+    const r=window.RESUMES&&window.RESUMES[String(job.id)];
+    if(r&&r.freshBuild&&r.atsScore!=null) return r.atsScore;
+
     const tags=(job.tags||[]).map(t=>t.toLowerCase().trim());
     if(!tags.length) return null;
     let matches=0;
