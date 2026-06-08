@@ -1,5 +1,5 @@
 OMKAR APTE — JOB DASHBOARD DOCUMENTATION
-Last updated: 2026-06-08
+Last updated: 2026-06-08 (session 2)
 
 ════════════════════════════════════════════════════════════
 WHAT WAS DONE
@@ -163,6 +163,35 @@ WHAT WAS DONE
     Shown in both the main render() and toggleRecent() card templates.
     The ATS_SKILLS keyword array is module-scoped (defined once, not per-call)
     for efficiency across 384+ job renders.
+
+11. ATS SCORE ACCURACY OVERHAUL + RESUME AUTO-BOOST (2026-06-08 session 2)
+
+    Problem: Prior ATS calculator used substring matching (tag.includes(skill))
+    which caused gross false positives:
+      - 'ai'.includes check matched 'training' (tr-AI-ning contains 'ai')
+      - 'bi'.includes check matched 'ability', 'combine', etc.
+      - 'r'.includes check matched almost every word
+    Result: scores were inflated and meaningless.
+
+    Fix — Accurate word-boundary ATS calculator (js/ui.js):
+    - Each job tag is split into individual words on spaces/hyphens/slashes
+    - Each word is checked against ATS_SKILL_WORDS (a Set for O(1) lookup)
+    - A tag "matches" if ANY of its words is in the candidate's verified skill set
+    - Stopwords ('and','for','the', etc.) are excluded from word matching
+    - Short skills ('bi','ai','gis','r') are in the Set but only match as WHOLE WORDS
+      (Set.has() is exact — 'bi' will not match 'ability', only the word 'bi' itself)
+    - window.calcATSScore exposed globally so resume.js can access it
+
+    Resume auto-boost (js/resume.js):
+    - buildResumePDF() now calls window.calcATSScore(job) at the start
+    - If score < 85, needsBoost = true
+    - When needsBoost: all 4 skill sections are unconditionally included in the resume
+      (Environmental Compliance, Data and Automation, GIS and Spatial Analysis,
+      AI and Technical) regardless of job type detection flags
+    - This maximizes keyword density in the generated PDF so an actual ATS scanner
+      would score the resume above 85 for any job in the candidate's field
+    - The fallback "Technical" section is suppressed when needsBoost is true
+      (replaced by the explicit sections which are more comprehensive)
 
 ════════════════════════════════════════════════════════════
 WHAT WASN'T DONE / KNOWN LIMITATIONS

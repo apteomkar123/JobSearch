@@ -257,32 +257,46 @@ window.openEmail=id=>{
 function pill(t,c){return `<span class="pill" style="background:${c}18;color:${c};border-color:${c}35">${t}</span>`;}
 
 // ── ATS SCORE CALCULATOR ─────────────────────────────────────────────────────────
-const ATS_SKILLS=[
-  'environmental','compliance','ehs','hse','regulatory','spcc','swppp','rcra','stormwater',
-  'npdes','water quality','water','air permit','method 9','permit','audit','inspection',
-  'title v','mact','bmact','caa','cwa','ncdeq','coordinator','specialist','manager',
-  'power bi','python','sql','r','excel','data analysis','analytics','reporting','bi',
-  'power automate','automation','dashboard','kpi','data visualization','data analytics',
-  'ai','machine learning','ai agents','github copilot','copilot','lms','systems',
-  'gis','arcgis','qgis','geospatial','mapping','spatial','esri',
-  'c#','javascript','html','css','programming','software','coding','typescript',
-  'project management','training','communication','microsoft office','documentation',
-  'report writing','leadership','teamwork','problem solving','sustainability','safety',
-  'osha','manufacturing','industrial','natural resources','energy','waste','hazardous',
-  'implementation','consultant','solutions','digital','cloud','database','etl',
-  'azure','aws','sharepoint','teams','power platform',
-];
+// Word-boundary matching — each job tag is split into words; a tag "matches"
+// if any of its words exactly appears in the candidate's verified skill set.
+// This prevents false positives like 'ai' matching 'training' via substring.
+const ATS_SKILL_WORDS = new Set([
+  // Environmental / EHS (strong, verified experience)
+  'environmental','ehs','hse','spcc','swppp','rcra','stormwater','npdes','mact','bmact',
+  'compliance','regulatory','permit','permitting','audit','auditing','inspection',
+  'hazardous','waste','sustainability','osha','safety','manufacturing','industrial',
+  'monitoring','remediation','corrective','wastewater','groundwater','coordinator',
+  'science','scientist','specialist','manager','engineer',
+  // Data / Analytics (strong experience)
+  'python','sql','excel','analytics','reporting','automation','dashboard','kpi',
+  'visualization','analysis','analyst','intelligence','tableau','spotfire','etl','database',
+  // AI / Tech (strong experience)
+  'copilot','programming','software','coding','javascript','typescript','html','css',
+  'digital','azure','aws','lms','erp','cloud','systems','sharepoint',
+  // GIS (moderate experience)
+  'arcgis','qgis','geospatial','spatial','mapping','esri',
+  // Soft / General (strong experience)
+  'training','communication','leadership','teamwork','documentation','management',
+  'project','implementation','consulting','consultant','coordination','research',
+  'planning','energy','climate','resources',
+  // Short-form — exact whole-word match only (safe because Set lookup is exact)
+  'bi','ai','gis','r',
+]);
+const ATS_STOP = new Set(['and','for','the','with','in','of','to','a','an','or','on','at','by','as','is','be','are','was']);
+
 function calcATSScore(job){
   try{
     const tags=(job.tags||[]).map(t=>t.toLowerCase().trim());
     if(!tags.length) return null;
     let matches=0;
     for(const tag of tags){
-      if(ATS_SKILLS.some(s=>tag.includes(s)||s.includes(tag))) matches++;
+      const words=tag.split(/[\s\-\/,&+()]+/).filter(w=>w.length>=1&&!ATS_STOP.has(w));
+      if(words.some(w=>ATS_SKILL_WORDS.has(w))) matches++;
     }
     return Math.min(99,Math.round((matches/tags.length)*100));
   }catch(e){ return null; }
 }
+window.calcATSScore = calcATSScore;
 
 let toastTimer;
 function toast(m){

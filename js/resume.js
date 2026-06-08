@@ -171,37 +171,41 @@ async function buildResumePDF(job, summaryText) {
   const isAI    = ['ai','agent','automation','engineer','developer','software'].some(k=>title_l.includes(k));
   const isImpl  = ['implementation','consultant','solutions','specialist'].some(k=>title_l.includes(k));
 
+  // When genuine ATS score < 85, include all skill sections for maximum keyword coverage
+  const atsScore = typeof window.calcATSScore === 'function' ? window.calcATSScore(job) : null;
+  const needsBoost = atsScore !== null && atsScore < 85;
+
   sectionHeader('Core Skills');
-  
-  // ATS Keywords Injection (from Job Tags)
+
+  // ATS Keywords Injection (from Job Tags) — always included
   if (job.tags && job.tags.length > 0) {
     skillLine('Areas of Expertise', job.tags);
   }
 
-  // Logic-based skill groups per Master Document
-  if (isEHS || isImpl) {
+  // Logic-based skill groups — always include all when ATS < 85 for keyword coverage
+  if (isEHS || isImpl || needsBoost) {
     const list = ['Title V Air (PCWP-MACT, BMACT)','SPCC','SWPPP / NPDES Stormwater','RCRA Hazardous Waste','Water Quality Monitoring','Method 9','CWA / CAA','NCDEQ Coordination'];
     skillLine('Environmental Compliance', list);
     allKeywords.push(...list);
   }
-  if (isData || isAI) {
+  if (isData || isAI || needsBoost) {
     const list = ['Power BI','Python','R','SQL','Power Automate','AI Agent Deployment','GitHub Copilot','Excel'];
     skillLine('Data and Automation', list);
     allKeywords.push(...list);
   }
-  if (isGIS) {
+  if (isGIS || needsBoost) {
     const list = ['ArcGIS Pro','ArcGIS Online','QGIS','Spatial Analysis','Watershed Delineation','Environmental Mapping'];
     skillLine('GIS and Spatial Analysis', list);
     allKeywords.push(...list);
   }
-  if (isAI || isImpl || title_l.includes('software')) {
+  if (isAI || isImpl || title_l.includes('software') || needsBoost) {
     const list = ['AI Agent Deployment','GitHub Copilot','Python Scripting','Power Automate','C# (Self-taught)','Digital Workflow Development'];
     skillLine('AI and Technical', list);
     allKeywords.push(...list);
   }
-  
-  // Default fallback for technical skills if no specific match
-  if (!isEHS && !isData && !isGIS && !isAI && !isImpl) {
+
+  // Default fallback only when no boost needed and no type match
+  if (!needsBoost && !isEHS && !isData && !isGIS && !isAI && !isImpl) {
     skillLine('Technical', ['Python','Power BI','GIS / ArcGIS','Power Automate','GitHub Copilot','Excel','R','SQL']);
   }
 
