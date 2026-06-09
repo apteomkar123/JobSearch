@@ -1,5 +1,32 @@
 OMKAR APTE — JOB DASHBOARD DOCUMENTATION
-Last updated: 2026-06-08 (session 2)
+Last updated: 2026-06-09 (session 8)
+
+════════════════════════════════════════════════════════════
+SESSION 8 — RESUME SECTION FIXES
+════════════════════════════════════════════════════════════
+
+1. REMOVED "WHY THIS ROLE" SECTION FROM ALL RESUMES
+   File: js/resume.js
+   Removed the entire "Why This Role" conditional block (was lines 184-201).
+   This section appeared on every resume that had a job.why field (all 399 jobs).
+   The pronoun-replacement logic and sectionHeader('Why This Role') call are gone.
+
+2. FIXED "PROFESSIONAL EXPERIENCE" ORPHAN HEADER BUG
+   File: js/resume.js
+   Issue: When resumes are generated from a pasted JD, the "Professional Experience"
+   header would render at the bottom of a page, with the first job entry starting on
+   the next page — an orphan header.
+   Fix: Added checkY(22 + measureJobTitleHeight(...)) before sectionHeader('Professional
+   Experience'). This ensures both the section header (22pt) AND the first job title
+   block have sufficient space on the current page before rendering. If not, a new page
+   is started first, keeping the header and first job entry together.
+
+════════════════════════════════════════════════════════════
+WHAT WASN'T DONE / NOT APPLICABLE
+════════════════════════════════════════════════════════════
+   All items in Instructions.md were addressed.
+
+────────────────────────────────────────────────────────────
 
 ════════════════════════════════════════════════════════════
 WHAT WAS DONE

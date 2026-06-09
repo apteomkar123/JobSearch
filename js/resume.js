@@ -181,26 +181,8 @@ async function buildResumePDF(job, summaryText) {
 
   skillLine('Communication', ['Technical Report Writing', 'Regulatory Coordination', '200+ Employee Training', 'Management Briefings', 'Cross-functional Coordination']);
 
-  // ── WHY THIS ROLE ─────────────────────────────────────────────────────────
-  if (job.why && job.why.trim()) {
-    sectionHeader('Why This Role');
-    let whyText = (job.why || '')
-      .replace(/\byourself\b/gi, 'myself')
-      .replace(/\byou've\b/gi, "I've")
-      .replace(/\byou're\b/gi, "I'm")
-      .replace(/\byours\b/gi, 'mine')
-      .replace(/\byour\b/gi, 'my')
-      // Object-position "you" → "me" (after prepositions and transitive verbs)
-      .replace(/\b(for|to|with|of|about|from|by|into|after|through|before|behind|between|among|around|like|than|toward|towards|unlike|without|within|including)\s+you\b/gi, '$1 me')
-      .replace(/\b(makes?|make|gives?|give|helps?|help|allows?|allow|lets?|let|needs?|need|suits?|suit|fits?|enables?|enable|positions?|qualifies?|requires?|equips?|sets?)\s+you\b/gi, '$1 me')
-      .replace(/\byou\b/gi, 'I')
-      .replace(/\bon the (list|board)\.?/gi, '')
-      .replace(/\bthis is the\b.* applicable job/gi, '').trim();
-    const whySentences = whyText.split('.').filter(s => s.trim()).slice(0, 2);
-    bodyText(whySentences.join('. ').trim() + '.');
-  }
-
   // ── PROFESSIONAL EXPERIENCE ───────────────────────────────────────────────
+  checkY(22 + measureJobTitleHeight('Environmental Coordinator | Georgia-Pacific (Koch Industries)', 'Dudley, NC | June 2024 – Present'));
   sectionHeader('Professional Experience');
 
   // ── GEORGIA-PACIFIC ───────────────────────────────────────────────────────

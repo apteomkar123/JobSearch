@@ -1,0 +1,2 @@
+1. Take out the Why this Role section from all resumes
+2. Resumes that are being generated off of a pasted JD have a big issue, the title "Proffesional Experience" is on one page and then there's a page break.
