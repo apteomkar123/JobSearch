@@ -257,10 +257,13 @@ async function buildResumePDF(job, summaryText) {
   // ── LYFEWARE ──────────────────────────────────────────────────────────────
   sectionHeader('Personal Projects');
   drawUnbreakableJobBlock('LyfeWare — Integrated Lifestyle Ecosystem', 'Solo Build | 2024 – Present', [
-    'Engineered and deployed a centralized "Sign in with LyfeWare" SSO authentication portal for a multi-app ecosystem (Pantry, HomeBase, Vinyl), leveraging React, Vite, and Supabase Auth with Google and Apple OAuth for seamless cross-platform session persistence and data portability',
-    'Engineered a cross-app real-time signal bus using PostgreSQL triggers and Supabase Realtime — e.g., automatically triggering high-BPM playlists in Vinyl when a deep-clean chore is started in HomeBase',
-    'Designed a unified multi-tenant Supabase schema with Row Level Security policies handling shared household data across grocery lists, expenses, and analytics',
-    'Orchestrated a CI/CD pipeline with TypeScript for end-to-end type safety, Netlify for web hosting, and Expo for cross-platform mobile deployment'
+    'Architected and deployed LyfeWare, a multi-app lifestyle suite consisting of Pantry (AI culinary intelligence), HomeBase (domestic operations management), and Vinyl (social music atmosphere), unified by a custom "Sign in with LyfeWare" SSO identity layer',
+    'Engineered the SSO authentication portal using React, Vite, and Supabase Auth with Google and Apple OAuth, enabling seamless cross-platform session persistence and data portability across three distinct web and mobile applications',
+    'Pantry: AI-driven pantry and recipe manager featuring receipt-scanning expense splitting and smart meal planning based on dietary restrictions',
+    'HomeBase: co-living management system with gamified chore drafting, automated debt settlement, and property maintenance tracking',
+    'Vinyl: social music platform (React Native/Expo) with a Mood-Food matching engine that curates playlist atmospheres based on household activity',
+    'Developed a cross-app real-time signal bus using PostgreSQL triggers and Supabase Realtime (e.g., triggering high-BPM cleaning playlists in Vinyl when a deep-clean chore starts in HomeBase) and a multi-tenant Supabase schema with Row Level Security for shared household data',
+    'Orchestrated a CI/CD pipeline with TypeScript for end-to-end type safety, Netlify for high-availability web hosting, and Expo for cross-platform mobile deployment'
   ], 2);
 
   // ── EDUCATION ─────────────────────────────────────────────────────────────

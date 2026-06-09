@@ -74,7 +74,7 @@ window.parseBulkUrls = async () => {
         method:'POST', headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           model:'claude-sonnet-4-6', max_tokens:2000,
-          tools:[{type:'web_search_20250305',name:'web_search'}],
+          tools:[{type:'web_search_20260209',name:'web_search'}],
           system:`Extract job data from a URL. Return ONLY a JSON object: {title,company,companySize,type,pay,payNum,url,fit,source,tags,benefits,bonus,why,resume_angle,badge,badgeColor}. No markdown. Estimate 'fit' (1-100) for Omkar Apte: Env Coordinator 2 years at Georgia-Pacific, owns Title V/SPCC/SWPPP/RCRA programs, Power BI, Python automation, AI agents, B.S. Env Science NC State.`,
           messages:[{role:'user',content:`Extract job data from: ${url}`}]
         })

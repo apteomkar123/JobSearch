@@ -1,0 +1,12 @@
+{
+  "name": "jobsearch-build",
+  "version": "1.0.0",
+  "description": "Pre-generate all resumes and cover letters for all jobs, upload to Supabase",
+  "type": "commonjs",
+  "scripts": {
+    "build": "node build-all.js"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1"
+  }
+}

@@ -143,7 +143,7 @@ window.fetchAllJDs = async function() {
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 2500,
-          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+          tools: [{ type: 'web_search_20260209', name: 'web_search' }],
           system: `Fetch the job posting URL and return ONLY a JSON object with no markdown:
 {
   "accessible": true or false,
@@ -278,7 +278,7 @@ window.fetchAllCoverLetters = async function() {
           body: JSON.stringify({
             model: 'claude-sonnet-4-6',
             max_tokens: 2000,
-            tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+            tools: [{ type: 'web_search_20260209', name: 'web_search' }],
             system: `You write concise, highly specific cover letters for Omkar Apte. Use web search to research the company before writing — know what they actually do, their recent work or mission.
 
 CANDIDATE PROFILE — Omkar Apte:
@@ -397,7 +397,7 @@ window.generateCoverLetter = async function(id) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 2000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        tools: [{ type: 'web_search_20260209', name: 'web_search' }],
         system: `You write concise, highly specific cover letters for Omkar Apte. Use web search to research the company before writing — know what they actually do, their recent work or mission.
 
 CANDIDATE PROFILE — Omkar Apte:
@@ -558,7 +558,7 @@ window.autoFetchJD = async function(id) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 3000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        tools: [{ type: 'web_search_20260209', name: 'web_search' }],
         system: `Fetch the job posting at the given URL and return structured data. Return ONLY a JSON object with no markdown:
 {
   "accessible": true or false (false if the page is blocked, removed, or login-gated),
@@ -846,7 +846,7 @@ window.parseJobUrl = async () => {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 4000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        tools: [{ type: 'web_search_20260209', name: 'web_search' }],
         system: `You are a job data extraction assistant. Your ONLY job is to extract structured data from a job posting URL and return it as a JSON object. 
 
 Return ONLY a JSON object with these exact fields (no markdown, no explanation, just the JSON):

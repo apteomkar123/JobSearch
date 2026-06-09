@@ -12018,5 +12018,34 @@ window.ALL_JOBS = [
     "resume_angle": "Lead with multi-program regulatory ownership and Power BI analytics.",
     "url": "https://www.linkedin.com/jobs/view/4390493699/",
     "recruiter": { "name": null, "linkedin_search": "https://www.linkedin.com/search/results/people/?keywords=recruiter", "note": "Newly added." }
+  },
+  {
+    "id": 401,
+    "batch": 24,
+    "title": "Lead Manager — Environmental Engineer",
+    "company": "Reynolds American (British American Tobacco)",
+    "companySize": "~4,000 employees (Winston-Salem site); BAT Group ~50,000 globally",
+    "type": "On-site | Winston-Salem, NC",
+    "pay": "",
+    "fit": 92,
+    "source": "direct",
+    "tags": [
+      "Air Quality",
+      "Title V",
+      "RCRA",
+      "Wastewater",
+      "Environmental Compliance",
+      "Regulatory Permitting",
+      "Stormwater",
+      "Compliance Reporting"
+    ],
+    "benefits": "401k match (100% up to 6%), medical/dental/vision, 15-25 days PTO, paid parental leave, flexible work options, tuition reimbursement, professional development",
+    "bonus": "Performance-based annual bonus",
+    "why": "Reynolds American needs a compliance lead for air, water, and waste programs at a major manufacturing site — exactly what you own at Georgia-Pacific. Your Title V, SPCC, RCRA, and stormwater multi-program ownership with zero major violations matches their core requirements precisely. The regulatory agency coordination, inspection management, and permit work are daily tasks for you.",
+    "resume_angle": "Lead with multi-program ownership (Title V, SPCC, RCRA, stormwater) and zero violations record at a comparable industrial facility. Emphasize air quality depth since Reynolds American lists it first. Method 9 certification and stack test coordination are direct differentiators.",
+    "badge": "Top Match",
+    "badgeColor": "#22c55e",
+    "url": "https://careers.bat.com/en/job/-/-/1045/32100789824",
+    "recruiter": { "name": null, "linkedin_search": "https://www.linkedin.com/search/results/people/?keywords=Reynolds+American+environmental+recruiter+talent+acquisition", "note": "Reynolds American (BAT subsidiary) based in Winston-Salem NC." }
   }
 ];

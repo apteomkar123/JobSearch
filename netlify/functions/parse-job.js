@@ -35,7 +35,7 @@ exports.handler = async (event) => {
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
     };
-    if (hasWebSearch) apiHeaders['anthropic-beta'] = 'web-search-2025-03-05';
+    // web_search_20260209 is GA — no beta header required
 
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
