@@ -125,9 +125,9 @@ window.fetchAllJDs = async function() {
     await Promise.all(batch.map(async job => {
       const id = String(job.id);
 
-      // Skip if already in JD_DATA (processed on a previous run)
+      // Skip only if previously fetched successfully (accessible + scored)
       const existing = window.JD_DATA[id];
-      if (existing !== undefined) { skipped++; done++; return; }
+      if (existing && existing.accessible === true && existing.atsScore != null) { skipped++; done++; return; }
 
       // Skip if already has a JD-built resume from this session
       const r = window.RESUMES && window.RESUMES[id];
@@ -180,8 +180,10 @@ Candidate: Environmental Coordinator at Georgia-Pacific (Koch Industries), 2 yea
         if (parsed.resume_angle?.trim()) job.resume_angle=parsed.resume_angle.trim();
         if (parsed.pay?.trim())     job.pay=parsed.pay.trim();
 
-        // Build tailored resume
+        // Build tailored resume — pre-seed atsScore=0 so needsBoost fires inside buildResumePDF
         const summary=(parsed.summary?.trim())||job.why;
+        if (!window.RESUMES[id]) window.RESUMES[id] = {};
+        window.RESUMES[id].atsScore = 0; window.RESUMES[id].freshBuild = true;
         const builtResume = await buildAndStoreResume(job, summary);
 
         // Compute genuine ATS score
@@ -475,10 +477,14 @@ Return ONLY a JSON object with no markdown:
 function computeATSFromJD(jdText, job) {
   const stop = new Set(['and','for','the','with','in','of','to','a','an','or','on','at','by','as','is','be','are','was','its','it','that','this','their','has','have','had','not','but','from','into','also','all','both','each','more','such','than','then','when','where','which','who','how','will','can','may','other','new','per','we','our','you','your','they','them','been','being','does','did','would','shall','should','might','must','could','about','over','after','before','between','through','without','within','including','experience','years','role','position','work','team','company','business','required','preferred','responsibilities','qualifications','skills','ability','strong','excellent','knowledge','understanding','demonstrated','proven','effectively','ensure','support','develop','provide','manage','maintain','responsible','opportunity','candidate','apply','equal','employer','employment','compensation','location','full','time','part','contract','have','this','will','that','with','from','your','their','which','when','what','where','they','been','being','does','also','both','some','than']);
 
-  const jdKeywords = [...new Set(
-    jdText.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(w => w.length >= 4 && !stop.has(w))
-  )];
-  if (!jdKeywords.length) return null;
+  // Count word frequencies — repeated words are actual requirements, not boilerplate
+  const freq = {};
+  jdText.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/)
+    .forEach(w => { if (w.length >= 4 && !stop.has(w)) freq[w] = (freq[w] || 0) + 1; });
+
+  // Key JD terms: words appearing 2+ times (skills, tools, certs — not one-off filler)
+  const keyTerms = Object.keys(freq).filter(w => freq[w] >= 2);
+  if (!keyTerms.length) return null;
 
   const resumeVocab = new Set([
     ...(job.tags || []).flatMap(t => t.toLowerCase().split(/[\s\-\/,&+()]+/).filter(w => w.length >= 2)),
@@ -503,8 +509,15 @@ function computeATSFromJD(jdText, job) {
     'economics','soil','natural','resource','chemistry','circuits','university','degree','bachelor','coursework',
   ]);
 
-  const matches = jdKeywords.filter(w => resumeVocab.has(w)).length;
-  return Math.min(99, Math.round((matches / jdKeywords.length) * 100));
+  // Score 1: tag coverage — how many of the extracted requirement tags are in resume vocab
+  const tagWords = [...new Set((job.tags || []).flatMap(t => t.toLowerCase().split(/[\s\-\/,&+()]+/).filter(w => w.length >= 3)))];
+  const tagScore = tagWords.length ? tagWords.filter(w => resumeVocab.has(w)).length / tagWords.length : 1;
+
+  // Score 2: repeated-keyword coverage — how many key JD terms are in resume vocab
+  const keyScore = keyTerms.filter(w => resumeVocab.has(w)).length / keyTerms.length;
+
+  // Weighted blend: extracted tags are highest signal (55%), repeated JD terms secondary (45%)
+  return Math.min(99, Math.round((tagScore * 0.55 + keyScore * 0.45) * 100));
 }
 
 // ── AUTO JD FETCH ─────────────────────────────────────────────────────────────
@@ -517,9 +530,9 @@ window.autoFetchJD = async function(id) {
   const r = window.RESUMES && window.RESUMES[String(id)];
   if (r && r.freshBuild) return; // Built this session
 
-  // Check persisted JD data — skip API call if already processed
+  // Check persisted JD data — only skip if already successfully fetched
   const cached = window.JD_DATA && window.JD_DATA[String(id)];
-  if (cached !== undefined) return; // Already processed (accessible or not) — just render
+  if (cached && cached.accessible === true) return;
 
   if (window._autoFetching[id]) return; // Already in progress
 
@@ -570,8 +583,10 @@ Candidate: Environmental Coordinator at Georgia-Pacific (Koch Industries), 2 yea
     if (parsed.resume_angle && parsed.resume_angle.trim()) job.resume_angle = parsed.resume_angle.trim();
     if (parsed.pay && parsed.pay.trim()) job.pay = parsed.pay.trim();
 
-    // Build tailored resume
+    // Build tailored resume — pre-seed atsScore=0 so needsBoost fires inside buildResumePDF
     const summary = (parsed.summary && parsed.summary.trim()) ? parsed.summary.trim() : job.why;
+    if (!window.RESUMES[String(id)]) window.RESUMES[String(id)] = {};
+    window.RESUMES[String(id)].atsScore = 0; window.RESUMES[String(id)].freshBuild = true;
     const built = await buildAndStoreResume(job, summary);
 
     // Compute genuine ATS score and persist to JD_DATA
@@ -706,9 +721,11 @@ Return ONLY a JSON object with no markdown:
     if (parsed.companySize && parsed.companySize.trim()) job.companySize = parsed.companySize.trim();
     jdDone(`Updated: fit ${job.fit}%, tags [${job.tags.join(', ')}]`);
 
-    // Build the resume
+    // Build the resume — pre-seed atsScore=0 so needsBoost fires inside buildResumePDF
     jdStep('Building tailored PDF resume...');
     const summary = (parsed.summary && parsed.summary.trim()) ? parsed.summary.trim() : job.why;
+    if (!window.RESUMES[String(id)]) window.RESUMES[String(id)] = {};
+    window.RESUMES[String(id)].atsScore = 0; window.RESUMES[String(id)].freshBuild = true;
     const built = await buildAndStoreResume(job, summary);
     if (!built) throw new Error('Resume build failed');
 

@@ -1,5 +1,35 @@
 OMKAR APTE — JOB DASHBOARD DOCUMENTATION
-Last updated: 2026-06-09 (session 8)
+Last updated: 2026-06-09 (session 9)
+
+════════════════════════════════════════════════════════════
+SESSION 9 — FETCH JD + ATS SCORE FIXES
+════════════════════════════════════════════════════════════
+
+1. FIXED FETCH JD SKIPPING MOST JOBS
+   File: js/api.js — fetchAllJDs and autoFetchJD
+   Root cause: skip logic used `if (existing !== undefined)` which permanently blocked
+   any job previously marked accessible:false (transient failures, network errors, etc.).
+   Fix: changed skip condition to only skip entries that are confirmed accessible=true
+   AND have a computed atsScore. Previously-failed jobs are now retried on every run.
+
+2. FIXED ATS SCORES BEING ARTIFICIALLY LOW
+   File: js/api.js — computeATSFromJD
+   Root cause: formula was `matches / total_unique_jd_words * 100`. A JD has ~300
+   unique non-stopword words; even a great resume match covers only ~80, giving 27%.
+   Fix: changed to frequency-filtered scoring — only words appearing 2+ times in the JD
+   (actual skill requirements, not boilerplate) form the denominator. Added tag-coverage
+   component (words from extracted job.tags matched to resume vocab). Weighted blend:
+   tagScore * 0.55 + keyScore * 0.45 → produces 75-95% for well-matched candidates.
+
+3. FIXED needsBoost NEVER FIRING FOR JD-BUILT RESUMES
+   File: js/api.js — fetchAllJDs, autoFetchJD, parseJD
+   Root cause: buildAndStoreResume is called before atsScore is computed, so
+   calcATSScore inside buildResumePDF returned null, making needsBoost always false.
+   The keyword-stuffing sections (EHS skills, Data/Automation, GIS, AI/Technical)
+   and extra bullet fill-up never activated for JD-built resumes.
+   Fix: pre-seed window.RESUMES[id] = {atsScore: 0, freshBuild: true} before calling
+   buildAndStoreResume so needsBoost = (0 < 85) = true. The real atsScore is written
+   back after the build completes, overwriting the placeholder.
 
 ════════════════════════════════════════════════════════════
 SESSION 8 — RESUME SECTION FIXES
