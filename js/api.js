@@ -29,9 +29,9 @@ async function uploadJDChunks() {
   let ok = 0, fail = 0;
   for (let i = 0; i < 12; i++) {
     const slice = allIds.slice(i * chunkSize, (i+1) * chunkSize);
-    if (!slice.length) continue;
     const chunk = {};
     for (const id of slice) chunk[id] = window.JD_DATA[id];
+    // Always upload all 12 slots (even empty {}) so all files exist in Supabase
     try {
       const r = await fetch(`${window.SB_URL}/storage/v1/object/resumes/jd_data_${i}.json`,{
         method:'POST', headers:{'Authorization':'Bearer '+window.SB_KEY,'Content-Type':'application/json','x-upsert':'true'},
@@ -51,9 +51,9 @@ async function uploadCLChunks() {
   let ok = 0, fail = 0;
   for (let i = 0; i < 12; i++) {
     const slice = allIds.slice(i * chunkSize, (i+1) * chunkSize);
-    if (!slice.length) continue;
     const chunk = {};
     for (const id of slice) chunk[id] = window.COVER_LETTERS[id];
+    // Always upload all 12 slots (even empty {}) so all files exist in Supabase
     try {
       const r = await fetch(`${window.SB_URL}/storage/v1/object/resumes/cl_data_${i}.json`,{
         method:'POST', headers:{'Authorization':'Bearer '+window.SB_KEY,'Content-Type':'application/json','x-upsert':'true'},
