@@ -117,34 +117,34 @@ window.fetchAllJDs = async function() {
 
   toast(`Starting JD fetch for ${total} jobs — this will take several minutes`);
 
-  // Process in batches of 3 concurrent requests
-  const BATCH = 3;
-  for (let i = 0; i < jobs.length; i += BATCH) {
-    const batch = jobs.slice(i, i + BATCH);
+  let interDelay = 3000; // ms between requests; increases on 429, slowly recovers
 
-    await Promise.all(batch.map(async job => {
-      const id = String(job.id);
+  // Process sequentially — parallel requests reliably hit rate limits with web_search
+  for (let i = 0; i < jobs.length; i++) {
+    const job = jobs[i];
+    const id = String(job.id);
 
-      // Skip only if previously fetched successfully (accessible + scored)
-      const existing = window.JD_DATA[id];
-      if (existing && existing.accessible === true && existing.atsScore != null) { skipped++; done++; return; }
+    // Skip only if previously fetched successfully (accessible + scored)
+    const existing = window.JD_DATA[id];
+    if (existing && existing.accessible === true && existing.atsScore != null) { skipped++; done++; continue; }
 
-      // Skip if already has a JD-built resume from this session
-      const r = window.RESUMES && window.RESUMES[id];
-      if (r && r.freshBuild && r.atsScore != null) {
-        window.JD_DATA[id] = { accessible: true, atsScore: r.atsScore, tags: job.tags, fit: job.fit, why: job.why, resume_angle: job.resume_angle, pay: job.pay };
-        skipped++; done++; return;
-      }
+    // Skip if already has a JD-built resume from this session
+    const r = window.RESUMES && window.RESUMES[id];
+    if (r && r.freshBuild && r.atsScore != null) {
+      window.JD_DATA[id] = { accessible: true, atsScore: r.atsScore, tags: job.tags, fit: job.fit, why: job.why, resume_angle: job.resume_angle, pay: job.pay };
+      skipped++; done++; continue;
+    }
 
-      try {
-        const resp = await fetch('/.netlify/functions/parse-job', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-6',
-            max_tokens: 2500,
-            tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-            system: `Fetch the job posting URL and return ONLY a JSON object with no markdown:
+    let rateLimited = false;
+    try {
+      const resp = await fetch('/.netlify/functions/parse-job', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 2500,
+          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+          system: `Fetch the job posting URL and return ONLY a JSON object with no markdown:
 {
   "accessible": true or false,
   "jdText": "complete job description text",
@@ -157,10 +157,18 @@ window.fetchAllJDs = async function() {
 }
 Set accessible:false if the page is paywalled, login-gated, or removed.
 Candidate: Environmental Coordinator at Georgia-Pacific (Koch Industries), 2 years, Title V/SPCC/SWPPP/RCRA/stormwater, zero violations, Power BI (600+ users), Python automation, AI agents, GIS. B.S. Env Science NC State.`,
-            messages: [{ role: 'user', content: `Fetch: ${job.url}` }]
-          })
-        });
+          messages: [{ role: 'user', content: `Fetch: ${job.url}` }]
+        })
+      });
 
+      if (resp.status === 429) {
+        // Rate limited — back off, do NOT mark as inaccessible, retry next run
+        rateLimited = true;
+        interDelay = Math.min(interDelay * 2, 12000);
+        toast(`Rate limited — pausing ${Math.round(interDelay/1000)}s... (${done}/${total} done)`);
+        await new Promise(r => setTimeout(r, interDelay + 10000));
+        done++;
+      } else {
         if (!resp.ok) throw new Error('API ' + resp.status);
         const data = await resp.json();
         const raw = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
@@ -170,52 +178,56 @@ Candidate: Environmental Coordinator at Georgia-Pacific (Koch Industries), 2 yea
 
         if (!parsed.accessible || !parsed.jdText || parsed.jdText.trim().length < 80) {
           window.JD_DATA[id] = { accessible: false };
-          inaccessible++; done++; return;
+          inaccessible++; done++;
+        } else {
+          // Apply metadata overrides
+          if (Array.isArray(parsed.tags)&&parsed.tags.length) job.tags=parsed.tags.slice(0,6);
+          if (parsed.fit)             job.fit=Math.min(99,Math.max(1,parseInt(parsed.fit)||job.fit));
+          if (parsed.why?.trim())     job.why=parsed.why.trim();
+          if (parsed.resume_angle?.trim()) job.resume_angle=parsed.resume_angle.trim();
+          if (parsed.pay?.trim())     job.pay=parsed.pay.trim();
+
+          // Build tailored resume — pre-seed atsScore=0 so needsBoost fires inside buildResumePDF
+          const summary=(parsed.summary?.trim())||job.why;
+          if (!window.RESUMES[id]) window.RESUMES[id] = {};
+          window.RESUMES[id].atsScore = 0; window.RESUMES[id].freshBuild = true;
+          const builtResume = await buildAndStoreResume(job, summary);
+
+          // Compute genuine ATS score
+          let atsScore = null;
+          if (builtResume && parsed.jdText) {
+            atsScore = computeATSFromJD(parsed.jdText, job);
+            if (atsScore !== null && window.RESUMES[id]) window.RESUMES[id].atsScore = atsScore;
+          }
+
+          window.JD_DATA[id] = { accessible: true, atsScore, tags: job.tags, fit: job.fit, why: job.why, resume_angle: job.resume_angle, pay: job.pay };
+          built++; done++;
+
+          // Slowly recover delay after a successful request
+          interDelay = Math.max(interDelay * 0.9, 3000);
         }
-
-        // Apply metadata overrides
-        if (Array.isArray(parsed.tags)&&parsed.tags.length) job.tags=parsed.tags.slice(0,6);
-        if (parsed.fit)             job.fit=Math.min(99,Math.max(1,parseInt(parsed.fit)||job.fit));
-        if (parsed.why?.trim())     job.why=parsed.why.trim();
-        if (parsed.resume_angle?.trim()) job.resume_angle=parsed.resume_angle.trim();
-        if (parsed.pay?.trim())     job.pay=parsed.pay.trim();
-
-        // Build tailored resume — pre-seed atsScore=0 so needsBoost fires inside buildResumePDF
-        const summary=(parsed.summary?.trim())||job.why;
-        if (!window.RESUMES[id]) window.RESUMES[id] = {};
-        window.RESUMES[id].atsScore = 0; window.RESUMES[id].freshBuild = true;
-        const builtResume = await buildAndStoreResume(job, summary);
-
-        // Compute genuine ATS score
-        let atsScore = null;
-        if (builtResume && parsed.jdText) {
-          atsScore = computeATSFromJD(parsed.jdText, job);
-          if (atsScore !== null && window.RESUMES[id]) window.RESUMES[id].atsScore = atsScore;
-        }
-
-        window.JD_DATA[id] = { accessible: true, atsScore, tags: job.tags, fit: job.fit, why: job.why, resume_angle: job.resume_angle, pay: job.pay };
-        built++; done++;
-
-      } catch(err) {
+      }
+    } catch(err) {
+      if (!rateLimited) {
         console.warn(`JD fetch failed job ${id}:`, err.message);
         window.JD_DATA[id] = { accessible: false };
         inaccessible++; done++;
       }
-    }));
+    }
 
-    // Progress toast every 30 jobs
-    if (done % 30 < BATCH || done >= total) {
+    // Progress toast every 10 jobs
+    if (done % 10 === 0 || done >= total) {
       toast(`Fetching JDs: ${done}/${total} — ${built} built, ${inaccessible} inaccessible, ${skipped} cached`);
     }
 
-    // Incremental save every 60 jobs so a mid-run close doesn't lose everything
-    if (done % 60 < BATCH) {
+    // Incremental save every 30 jobs so a mid-run close doesn't lose everything
+    if (done % 30 === 0 && done > 0) {
       await uploadJDChunks();
       await uploadResumeChunks();
     }
 
-    // Brief delay between batches to avoid rate limits
-    if (i + BATCH < jobs.length) await new Promise(r => setTimeout(r, 1500));
+    // Delay between requests
+    if (i + 1 < jobs.length && !rateLimited) await new Promise(r => setTimeout(r, interDelay));
   }
 
   toast(`All done — ${built} resumes built, ${inaccessible} inaccessible, ${skipped} already cached. Saving to Supabase...`);
@@ -563,6 +575,7 @@ Candidate: Environmental Coordinator at Georgia-Pacific (Koch Industries), 2 yea
       })
     });
 
+    if (resp.status === 429) throw new Error('rate_limited');
     if (!resp.ok) throw new Error('API ' + resp.status);
     const data = await resp.json();
     const rawText = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
@@ -601,7 +614,10 @@ Candidate: Environmental Coordinator at Georgia-Pacific (Koch Industries), 2 yea
 
   } catch(err) {
     console.log(`Auto JD fetch failed for job ${id}:`, err.message);
-    if (!window.JD_DATA[String(id)]) window.JD_DATA[String(id)] = { accessible: false };
+    // Don't mark rate-limit failures as inaccessible — leave slot open for retry
+    if (err.message !== 'rate_limited' && !window.JD_DATA[String(id)]) {
+      window.JD_DATA[String(id)] = { accessible: false };
+    }
   } finally {
     delete window._autoFetching[id];
     window.render();

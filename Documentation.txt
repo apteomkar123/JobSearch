@@ -1,5 +1,24 @@
 OMKAR APTE — JOB DASHBOARD DOCUMENTATION
-Last updated: 2026-06-09 (session 9)
+Last updated: 2026-06-09 (session 10)
+
+════════════════════════════════════════════════════════════
+SESSION 10 — RATE LIMIT HANDLING FOR FETCH JD
+════════════════════════════════════════════════════════════
+
+1. FIXED 429 RATE LIMIT ERRORS KILLING JD FETCH
+   File: js/api.js — fetchAllJDs and autoFetchJD
+   Root cause: concurrent batch of 3 requests with only 1500ms delay reliably hit
+   Anthropic's rate limit for the web_search beta. 429 errors were also incorrectly
+   treated the same as "job inaccessible", permanently blacklisting those jobs.
+   Fixes:
+   - fetchAllJDs now processes sequentially (one request at a time, not 3 concurrent)
+   - Base delay between requests is 3000ms (was 1500ms)
+   - On 429: delay increases adaptively (doubles up to 12s + 10s pause) and does NOT
+     mark the job as accessible:false — slot stays open for retry on the next run
+   - On success: delay slowly recovers (multiplied by 0.9 each time, floor 3000ms)
+   - autoFetchJD: 429 is thrown as 'rate_limited' error and is not written to JD_DATA,
+     so the card will retry on next expand rather than showing the inaccessible banner
+   - Progress toast now fires every 10 jobs (was every 30), incremental save every 30
 
 ════════════════════════════════════════════════════════════
 SESSION 9 — FETCH JD + ATS SCORE FIXES
