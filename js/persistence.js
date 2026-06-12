@@ -10,18 +10,34 @@ async function sbLoad(){
     const rows=await r.json();
     if(rows.length>0){
       const row=rows[0];
-      try{window.statuses=JSON.parse(row.statuses||'{}');}catch(e){}
-      try{window.flags=JSON.parse(row.flags||'{}');}catch(e){}
-      try{window.coverLetters=JSON.parse(row.cover_letters||'{}');}catch(e){}
+      try{
+        const sb=JSON.parse(row.statuses||'{}');
+        // Merge: Supabase is the base, local state wins (preserves any changes made before load completed)
+        window.statuses=Object.assign(sb,window.statuses);
+      }catch(e){}
+      try{
+        const sb=JSON.parse(row.flags||'{}');
+        window.flags=Object.assign(sb,window.flags);
+      }catch(e){}
+      try{
+        const sb=JSON.parse(row.cover_letters||'{}');
+        window.coverLetters=Object.assign(sb,window.coverLetters);
+      }catch(e){}
     }
-    window.sbReady=true; setSS('ok','Synced'); window.render(); window.updateStats();
+    window.sbReady=true;
+    // If a save was attempted while loading (bailed due to !sbReady), fire it now
+    if(window._saveNeededAfterLoad){
+      window._saveNeededAfterLoad=false;
+      sbSave();
+    }
+    setSS('ok','Synced'); window.render(); window.updateStats();
   }catch(e){
     lsLoad(); setSS('err','Offline'); window.render(); window.updateStats();
   }
 }
 async function sbSave(){
   lsSave();
-  if(!window.sbReady)return;
+  if(!window.sbReady){window._saveNeededAfterLoad=true;return;}
   try{
     setSS('pend','Saving');
     const res=await fetch(SB_URL+'/rest/v1/job_statuses',{
